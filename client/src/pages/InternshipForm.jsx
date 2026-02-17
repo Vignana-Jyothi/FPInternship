@@ -146,7 +146,7 @@ const verifyOTP = async () => {
     let updatedFormData = { ...formData, [name]: value };
 
     // ✅ Auto-set package for internship type
-    if (name === "internshipType") {
+    if (name === "internshipType") {t 
       if (value === "Unpaid") {
         updatedFormData.package = "0";
       } else{
