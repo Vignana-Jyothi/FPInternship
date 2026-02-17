@@ -20,13 +20,29 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  const branchOption = ['CSE','CSBS']
   const semesterOptions = ['1-1', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'];
   const sectionOptions = ['A', 'B', 'C', 'D'];
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  
+    let updatedForm = {
+      ...form,
+      [name]: type === 'checkbox' ? checked : value
+    };
+  
+    // 🔥 If CSBS selected → auto assign section A
+    if (name === "branch" && value === "CSBS") {
+      updatedForm.section = "A";
+    }
+  
+    // 🔥 If switching from CSBS to CSE → clear section
+    if (name === "branch" && value === "CSE") {
+      updatedForm.section = "";
+    }
+  
+    setForm(updatedForm);
   };
 
   const handleSubmit = async e => {
@@ -103,19 +119,29 @@ export default function Register() {
             <input name="rollNo" value={form.rollNo} onChange={handleChange} placeholder="Roll No" required />
             <input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" required />
             <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Email (must end with @vnrvjiet.in)" required />
-            <input name="branch" value={form.branch} onChange={handleChange} placeholder="Branch" required />
+            <select name="branch" value={form.branch} onChange={handleChange} required>
+          <option value="">Select Branch</option>
+          <option value="CSE">CSE</option>
+          <option value="CSBS">CSBS</option>
+        </select>
             <select name="semester" value={form.semester} onChange={handleChange} required>
               <option value="">Select Semester</option>
               {semesterOptions.map((sem) => (
                 <option key={sem} value={sem}>{sem}</option>
               ))}
             </select>
-            <select name="section" value={form.section} onChange={handleChange} required>
-              <option value="">Select Section</option>
-              {sectionOptions.map((sec) => (
-                <option key={sec} value={sec}>{sec}</option>
-              ))}
-            </select>
+            <select
+            name="section"
+            value={form.section}
+            onChange={handleChange}
+            required
+            disabled={form.branch === "CSBS"}
+          >
+            <option value="">Select Section</option>
+            {sectionOptions.map((sec) => (
+              <option key={sec} value={sec}>{sec}</option>
+            ))}
+          </select>
             <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Password" required />
             <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Confirm Password" required />
             <button type="submit" className="submit-btn gradient-button" disabled={loading}>

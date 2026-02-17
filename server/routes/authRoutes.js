@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const auth = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const sendMail = require('../utils/forgotpasswordEmailservice');
@@ -24,7 +25,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    console.log('Registering user with email:', email);
+   
 
     const user = new User({
       rollNo,
@@ -53,24 +54,23 @@ router.post('/login', async (req, res) => {
   const password = req.body.password;
 
   try {
-    console.log('Login attempt with email:', email);
-    console.log('Password provided:', password);
+
 
     // 🔍 Find user in DB
     const user = await User.findOne({ email });
     if (!user) {
-      console.warn('Login failed: User not found for email', email);
+    
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    console.log('User found:', user.email, 'Hashed password:', user.password);
+   
 
     // 🔐 Compare plain password with hashed DB password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
+    
 
     if (!isMatch) {
-      console.warn('Login failed: Incorrect password');
+      
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
@@ -88,25 +88,12 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-
-// ✅ Admin: Get All Users
-router.get('/users', async (req, res) => {
-  try {
-    const users = await User.find({}, 'rollNo name email branch semester role');
-    res.json(users);
-  } catch (err) {
-    console.error('Get users error:', err.message || err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 // POST /auth/send-reset-code
 // POST /auth/send-reset-code
 router.post('/send-reset-code', async (req, res) => {
   try {
     const { email } = req.body;
-    console.log("📩 Received email for reset:", email);
+   
 
     // 1️⃣ Check if user exists
     const user = await User.findOne({ email });
@@ -135,11 +122,11 @@ router.post('/send-reset-code', async (req, res) => {
     );
     
 
-    console.log("✅ Reset code sent to:", email);
+    
     res.json({ message: "Code sent to your email." });
 
   } catch (err) {
-    console.error("❌ send-reset-code error:", err);
+    
     res.status(500).json({ error: "Server error while sending reset code." });
   }
 });
@@ -203,16 +190,30 @@ router.post("/verify-reset-code", async (req, res) => {
 
     await user.save();
 
-    console.log("✅ Password reset successful for", email);
     res.json({ message: "Password updated successfully." });
 
   } catch (err) {
-    console.error("❌ verify-reset-code error:", err);
+   
     res.status(500).json({
       error: "Server error while verifying reset code.",
     });
   }
 });
+
+router.use(auth);
+
+
+// ✅ Admin: Get All Users
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find({}, 'rollNo name email branch semester role');
+    res.json(users);
+  } catch (err) {
+    console.error('Get users error:', err.message || err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 
 

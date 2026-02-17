@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 const Organization = require('../models/Organization');
 
-// GET all organizations
+
+// 🔓 Public – Get all organizations
 router.get('/', async (req, res) => {
   try {
     const organizations = await Organization.find({});
@@ -12,26 +14,49 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new organization
-router.post('/', async (req, res) => {
+
+// 🔐 Admin Only – Add organization
+router.post('/', auth, async (req, res) => {
   try {
+    if (req.admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     const { name } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name required' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name required' });
+    }
 
-    const existing = await Organization.findOne({ name: name.trim() });
-    if (existing) return res.status(409).json({ error: 'Organization exists' });
+    const existing = await Organization.findOne({
+      name: name.trim()
+    });
 
-    const newOrg = await Organization.create({ name: name.trim() });
+    if (existing) {
+      return res.status(409).json({ error: 'Organization already exists' });
+    }
+
+    const newOrg = await Organization.create({
+      name: name.trim()
+    });
+
     res.status(201).json(newOrg);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+
+// 🔐 Admin Only – Delete organization
+router.delete('/:id', auth, async (req, res) => {
   try {
+    if (req.admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     await Organization.findByIdAndDelete(req.params.id);
     res.json({ message: 'Organization deleted' });
+
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete organization' });
   }

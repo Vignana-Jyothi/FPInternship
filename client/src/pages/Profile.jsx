@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import ProfilePic from '../assets/profile.svg';
 import './Profile.css';
+import vnrImg from '../assets/vnrImage.jpg'
 
 export default function Profile() {
   const VITE_USER_BASE_URL=import.meta.env.VITE_USER_BASE_URL
@@ -31,7 +32,8 @@ export default function Profile() {
         return;
       }
       const res = await axios.get(`${VITE_USER_BASE_URL}/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { "x-auth-token": token }
+        
       });
       setUserProfile(res.data);
     } catch (error) {
@@ -59,13 +61,15 @@ export default function Profile() {
     { label: "Semester", key: "semester" }
   ];
 
+ 
+
   return (
     <div className="bg-light" style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
       <header className="profile-header">
         <div className="logo-section d-flex justify-content-between align-items-center p-3">
           <div className="d-flex align-items-center">
             <img
-              src="https://imgs.search.brave.com/fdlkfHICQa7zEoIDVWVgwHT3udeRthoABe7I9X06kmo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvZW4vdGh1bWIv/ZS9lNS9PZmZpY2lh/bF9sb2dvX29mX1ZO/UlZKSUVULnBuZy8y/NTBweC1PZmZpY2lh/bF9sb2dvX29mX1ZO/UlZKSUVULnBuZw"
+              src={vnrImg}
               alt="VNR VJIET Logo"
               className="profile-logo-img"
             />

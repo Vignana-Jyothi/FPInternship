@@ -27,12 +27,21 @@ const Analytics = () => {
 
   const knownBranches = ['CSE', 'CSBS'];
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
   /* ---------------- Fetch Academic Years (FROM DB) ---------------- */
   const fetchAcademicYears = async () => {
     try {
       const res = await axios.get(
-        `${ADMIN_BASE_URL}/internships/academic-years`
-      );
+        `${ADMIN_BASE_URL}/internships/academic-years`,
+        getAuthHeader());
       setAcademicYears(res.data); // [{ label: "2026-27", value: 2026 }]
     } catch (err) {
       console.error('Academic year fetch error:', err);
@@ -45,19 +54,23 @@ const Analytics = () => {
       const academicYearParam = yearFilter
         ? `${yearFilter}-${(Number(yearFilter) + 1).toString().slice(-2)}`
         : '';
-
-      const res = await axios.get(`${ADMIN_BASE_URL}/analytics`, {
-        params: {
-          status: statusFilter,
-          academicYear: academicYearParam,
-          section: sectionFilter
+  
+      const res = await axios.get(
+        `${ADMIN_BASE_URL}/analytics`,
+        {
+          ...getAuthHeader(),
+          params: {
+            status: statusFilter,
+            academicYear: academicYearParam,
+            section: sectionFilter
+          }
         }
-      });
-
+      );
+  
       const sorted = [...res.data.branchData].sort(
         (a, b) => knownBranches.indexOf(a.branch) - knownBranches.indexOf(b.branch)
       );
-
+  
       setBranchData(sorted);
     } catch (err) {
       console.error('Branch analytics error:', err);
@@ -67,7 +80,7 @@ const Analytics = () => {
   /* ---------------- Fetch Yearly Analytics ---------------- */
   const fetchYearlyAnalytics = async () => {
     try {
-      const res = await axios.get(`${ADMIN_BASE_URL}/yearly-analytics`);
+      const res = await axios.get(`${ADMIN_BASE_URL}/yearly-analytics`,getAuthHeader());
       setYearlyAnalytics(res.data);
     } catch (err) {
       console.error('Yearly analytics error:', err);

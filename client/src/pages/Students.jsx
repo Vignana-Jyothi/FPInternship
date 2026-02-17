@@ -28,6 +28,15 @@ const Students = () => {
     branch: "",
   });
 
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
  
   /* ========== PAGINATION (ADDED) ========== */
   const ITEMS_PER_PAGE = 10;
@@ -37,7 +46,9 @@ const Students = () => {
   const fetchStudents = async () => {
     try {
       const query = new URLSearchParams(filters).toString();
-      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/Users?${query}`);
+      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/Users?${query}`,
+      getAuthHeader());
+      
       setStudents(res.data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -47,7 +58,8 @@ const Students = () => {
 
     useEffect(() => {
       axios
-        .get(`${VITE_ADMIN_BASE_URL}/internships/academic-years`)
+        .get(`${VITE_ADMIN_BASE_URL}/internships/academic-years`, getAuthHeader())
+         
         .then(res => setAcademicYears(res.data))
         .catch(err => console.error(err));
     }, []);
@@ -75,7 +87,8 @@ const Students = () => {
 
   const openModal = async (rollNo) => {
     try {
-      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/roll/${rollNo}`);
+      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/roll/${rollNo}`,getAuthHeader());
+      
       setSelectedStudent(res.data);
       setShowModal(true);
     } catch (err) {
@@ -97,13 +110,14 @@ const Students = () => {
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
-
   const handleEditSubmit = async () => {
     try {
       await axios.put(
         `${VITE_ADMIN_BASE_URL}/roll/${selectedStudent.rollNo}`,
-        editForm
+        editForm,
+        getAuthHeader()   // 🔥 ADD THIS
       );
+  
       setEditModal(false);
       fetchStudents();
     } catch (err) {

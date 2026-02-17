@@ -24,7 +24,16 @@ const Upload = () => {
 
     // Fetch internship details to check end date
     try {
-      const internshipRes = await fetch(`${VITE_ADMIN_BASE_URL}/roll/${formData.rollNo}`);
+      const token = localStorage.getItem("token");
+
+      const internshipRes = await fetch(
+        `${VITE_ADMIN_BASE_URL}/roll/${formData.rollNo}`,
+        {
+          headers: {
+            "x-auth-token": token
+          }
+        }
+      );
       if (!internshipRes.ok) {
         alert('Could not find internship details for this roll number.');
         return;
@@ -47,16 +56,19 @@ const Upload = () => {
       return;
     }
 
-    console.log('Submitting feedback with data:', formData);
+ 
 
     try {
-      const response = await fetch(`${VITE_ADMIN_BASE_URL}/feedbacks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      const token = localStorage.getItem("token");
+
+        const response = await fetch(`${VITE_ADMIN_BASE_URL}/feedbacks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token
+          },
+          body: JSON.stringify(formData)
+        });
 
       if (response.ok) {
         alert('Feedback submitted successfully!');

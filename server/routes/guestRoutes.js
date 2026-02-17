@@ -1,36 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin');
 const User = require('../models/User');
 const Internship = require('../models/Internship');
 
 const JWT_SECRET = process.env.JWT_SECRET;
-
-
-// Guest login route
-router.post('/login', async (req, res) => {
-  const { name, password } = req.body;
-
-  try {
-    const adminUser = await Admin.findOne({ adminID: name });
-
-    if (!adminUser) {
-      return res.status(401).json({ error: 'Invalid guest credentials' });
-    }
-
-    // For simplicity, assuming password stored in plain text; otherwise use bcrypt.compare
-    if (adminUser.password !== password) {
-      return res.status(401).json({ error: 'Invalid guest credentials' });
-    }
-
-    const token = jwt.sign({ role: 'guest', name: adminUser.adminID }, JWT_SECRET, { expiresIn: '1h' });
-    return res.json({ token });
-  } catch (err) {
-    console.error('Guest login error:', err);
-    return res.status(500).json({ error: 'Server error' });
-  }
-});
 
 // Guest dashboard route
 router.get('/guest-dashboard', async (req, res) => {
@@ -70,10 +43,10 @@ router.get('/guest-dashboard', async (req, res) => {
         categorized[branch][section] = [];
       }
       categorized[branch][section].push({
-        _id: User._id,
+       
         name: User.name,
         rollNo: User.rollNo,
-        email: User.email,
+  
         semester: User.semester,
         organizationName: internship.organizationName || 'N/A',
       });
@@ -81,7 +54,7 @@ router.get('/guest-dashboard', async (req, res) => {
 
     res.json({ categorized });
   } catch (err) {
-    console.error('Guest dashboard error:', err);
+
     res.status(500).json({ error: 'Server error' });
   }
 });

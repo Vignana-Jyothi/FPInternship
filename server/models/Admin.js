@@ -2,12 +2,24 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const AdminSchema = new mongoose.Schema({
-  adminID: String,
-  name: String,
-  email: String,
-  phoneNo: Number,
-  department: String,
-  password: String,
+  adminID: { type: String, required: true },
+
+
+  email: { type: String, required: true },
+
+  // 👇 Phone numbers as array
+  phoneNumbers: {
+    type: [String],
+    validate: {
+      validator: function (arr) {
+        return arr.every(num => /^\d{10}$/.test(num));
+      },
+      message: "Each phone number must be exactly 10 digits"
+    },
+    default: []
+  },
+
+  password: { type: String, required: true },
 
   otp: {
     code: String,

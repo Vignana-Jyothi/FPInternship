@@ -4,15 +4,124 @@ const User = require('../models/User');
 const Internship = require('../models/Internship');
 const Feedback = require('../models/Feedback');
 const Admin = require('../models/Admin');
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const auth = require('../middleware/auth');
 const nodemailer = require("nodemailer");
 const bcrypt = require('bcryptjs');
 const { normalizeCompanyName } = require('../service/helper');
+const { sendFeedbackEmailReminders } = require('../utils/reminderEmailService');
 
 const sendMail = require("../utils/forgotpasswordEmailservice");
 
-console.log("✅ adminRoutes.js loaded");
 
+
+router.post('/login', async (req, res) => {
+  const { adminID, password } = req.body;
+
+  try {
+  
+
+    const trimmedID = adminID.trim();
+
+    const allAdmins = await Admin.find();
+  
+
+    const admin = await Admin.findOne({ adminID: trimmedID });
+   
+
+    if (!admin) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isMatch = await admin.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { userId: admin._id, role: "admin" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ token, role: "admin" });
+
+  } catch (err) {
+    
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post("/send-otp", async (req, res) => {
+  try {
+    const { adminID } = req.body;
+ 
+
+    if (!adminID) {
+      return res.status(400).json({ error: "Admin ID is required" });
+    }
+
+    const admin = await Admin.findOne({ adminID });
+    if (!admin) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    admin.otp = {
+      code: otp,
+      expiresAt: Date.now() + 10 * 60 * 1000
+    };
+    await admin.save();
+
+    // ✅ EXPLICIT receiver
+
+
+await sendMail(
+  process.env.EMAIL_USER,
+  "Admin Password Reset OTP",
+  `Admin ID: ${adminID}\n\nYour OTP is ${otp}. Valid for 10 minutes.`
+);
+
+
+    res.json({ message: "OTP sent successfully" });
+
+  } catch (err) {
+    console.error("SEND OTP ERROR:", err);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
+});
+
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { adminID, otp, newPassword } = req.body;
+
+    const admin = await Admin.findOne({ adminID });
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+    if (!admin.otp || Date.now() > admin.otp.expiresAt) {
+      return res.status(400).json({ error: "OTP expired. Request again." });
+    }
+
+    if (admin.otp.code !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    admin.password = newPassword; // auto-hashed
+    admin.otp = undefined;
+    await admin.save();
+
+    res.json({ message: "Admin password reset successful" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.use(auth);
 
 // Converts DB Date object into intended DD/MM interpretation
 
@@ -128,8 +237,20 @@ if (req.query.year && req.query.year !== "") {
         }
       });
     }
+
+    // If only month selected (no academic year)
+
   }
 }
+
+if (!req.query.year && req.query.month) {
+  const m = parseInt(req.query.month, 10);
+  if (!Number.isNaN(m)) {
+    mongoQuery.$expr = {
+      $eq: [{ $month: "$startingDate" }, m]
+    };
+  }
+} 
 
 
 
@@ -138,7 +259,6 @@ if (req.query.year && req.query.year !== "") {
       mongoQuery.organizationName = new RegExp(company, "i");
     }
 
-    console.log("Final Mongo Query:", JSON.stringify(mongoQuery, null, 2));
 
     const internships = await Internship.find(mongoQuery).lean();
     
@@ -326,7 +446,10 @@ router.post('/feedbacks', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    
+
     // Check if internship has ended before allowing feedback
+    
     const internship = await Internship.findOne({ rollNo:rollNo });
     if (!internship) {
       return res.status(400).json({ error: 'No internship found for this roll number' });
@@ -550,31 +673,6 @@ router.get('/roll/:rollNo', async (req, res) => {
 
 
 // Change from GET to POST
-router.post('/login', async (req, res) => {
-  const { adminID, password } = req.body;
-
-  try {
-    const admin = await Admin.findOne({ adminID });
-    if (!admin) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const isMatch = await admin.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // later replace with JWT
-    res.json({
-      token: 'dummy-token-for-now',
-      adminID: admin.adminID
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 
 
@@ -633,82 +731,28 @@ router.get('/remind-feedback', async (req, res) => {
   }
 });
 
-router.post("/send-otp", async (req, res) => {
+
+
+
+
+
+
+
+
+router.get("/admin-phones", async (req, res) => {
   try {
-    const { adminID } = req.body;
- 
+    const admin = await Admin.findOne();
 
-    if (!adminID) {
-      return res.status(400).json({ error: "Admin ID is required" });
-    }
-
-    const admin = await Admin.findOne({ adminID });
     if (!admin) {
       return res.status(404).json({ error: "Admin not found" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    admin.otp = {
-      code: otp,
-      expiresAt: Date.now() + 10 * 60 * 1000
-    };
-    await admin.save();
-
-    // ✅ EXPLICIT receiver
-    console.log("DEBUG EMAIL_USER:", process.env.EMAIL_USER);
-console.log("DEBUG EMAIL_PASS EXISTS:", !!process.env.EMAIL_PASS);
-
-await sendMail(
-  process.env.EMAIL_USER,
-  "Admin Password Reset OTP",
-  `Admin ID: ${adminID}\n\nYour OTP is ${otp}. Valid for 10 minutes.`
-);
-
-
-    res.json({ message: "OTP sent successfully" });
-
-  } catch (err) {
-    console.error("SEND OTP ERROR:", err);
-    res.status(500).json({ error: "Failed to send OTP" });
-  }
-});
-
-
-
-
-
-router.post("/reset-password", async (req, res) => {
-  try {
-    const { adminID, otp, newPassword } = req.body;
-
-    const admin = await Admin.findOne({ adminID });
-    if (!admin) return res.status(404).json({ error: "Admin not found" });
-
-    if (!admin.otp || Date.now() > admin.otp.expiresAt) {
-      return res.status(400).json({ error: "OTP expired. Request again." });
-    }
-
-    if (admin.otp.code !== otp) {
-      return res.status(400).json({ error: "Invalid OTP" });
-    }
-
-    admin.password = newPassword; // auto-hashed
-    admin.otp = undefined;
-    await admin.save();
-
-    res.json({ message: "Admin password reset successful" });
-
+    res.json({ phoneNumbers: admin.phoneNumbers });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Failed to fetch phone numbers" });
   }
 });
-
-
-
-
-
 
 
 module.exports = router;

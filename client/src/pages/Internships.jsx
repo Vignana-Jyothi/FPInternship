@@ -55,6 +55,15 @@
   
     /* ============================= */
 
+    const getAuthHeader = () => {
+      const token = localStorage.getItem("token");
+      return {
+        headers: {
+          "x-auth-token": token
+        }
+      };
+    };
+
     
     
     const normalizeCompanyName = (name) => {
@@ -126,8 +135,8 @@
       const fetchAcademicYears = async () => {
         try {
           const res = await axios.get(
-            `${VITE_ADMIN_BASE_URL}/internships/academic-years`
-          );
+            `${VITE_ADMIN_BASE_URL}/internships/academic-years`,
+            getAuthHeader());
           setAcademicYears(res.data); 
           // [{ label: "2025-26", value: 2025 }, ...]
         } catch (err) {
@@ -143,7 +152,7 @@
         try {
           const res = await fetch(`${VITE_ORG_BASE_URL}`);
           const data = await res.json();
-          console.log("Fetched organizations from API:", data); // ✅ This confirms fetch worked
+         
           setCompanies(data); // ✅ This sets the state
         } catch (err) {
           console.error("Failed to fetch organizations:", err);
@@ -212,7 +221,7 @@
       const fetchInternships = async () => {
         const query = buildQuery();
         try {
-          const res = await axios.get(`${VITE_ADMIN_BASE_URL}/internships/filter?${query}`);
+          const res = await axios.get(`${VITE_ADMIN_BASE_URL}/internships/filter?${query}`,getAuthHeader());
           setInternships(Array.isArray(res.data) ? res.data : res.data.internships || []);
         } catch (err) {
           console.error("Error fetching internships:", err);
@@ -261,7 +270,7 @@
       if (!window.confirm("Are you sure you want to delete this internship?")) return;
 
       try {
-        await axios.delete(`${VITE_ADMIN_BASE_URL}internships/${id}`);
+        await axios.delete(`${VITE_ADMIN_BASE_URL}/internships/${id}`,getAuthHeader());
         setInternships(prev => prev.filter(i => i._id !== id));
       } catch (error) {
         console.error("Error deleting internship:", error);
@@ -286,13 +295,7 @@
       setTimeout(() => fetchInternships(), 0); // ensures filters are updated first
     };
 
-      useEffect(() => {
-      console.log("Internship NOC links:");
-      internships.forEach(i => {
-        console.log(i.rollNo, i.noc); // or just console.log(i.noc);
-      });
-    }, [internships]);
-
+     
       const renderStatusBadge = (status) => {
         let color = "secondary";
         if (status === "ongoing") color = "success";

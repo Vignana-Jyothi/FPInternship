@@ -1,7 +1,6 @@
 import './Navbar.css'
 import React from 'react';
-import vnrImage from '../assets/vnrImage.webp'
- // Optional: move header-specific CSS here
+import vnrImage from '../assets/vnrImage.jpg'
 
 const Header = () => {
   return (

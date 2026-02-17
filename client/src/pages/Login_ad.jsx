@@ -15,23 +15,23 @@ function Login_ad() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+  
     try {
-      const response = await axios.post(`${VITE_ADMIN_BASE_URL}/login`, {
-        adminID,
-        password
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      });
-
-      console.log(response.data);
-      localStorage.setItem('adminToken', response.data.token);
+      const response = await axios.post(
+        `${VITE_ADMIN_BASE_URL}/login`,
+        { adminID, password }
+      );
+  
+    
+  
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("userRole", response.data.role);
+  
       navigate('/admin');
     } catch (error) {
-      console.error(error);
-      setError('Invalid Credentials');
+
+      setError(error.response?.data?.message || "Login failed");
     }
   };
   useEffect(() => {

@@ -48,8 +48,10 @@ app.use((err, req, res, next) => {
 
 // Schedule reminder emails
 cron.schedule('0 10 * * 1,4', async () => {
-  console.log('⏰ Running feedback reminder email job...');
+  
   await sendFeedbackEmailReminders();
+}, {
+  timezone: "Asia/Kolkata"
 });
 
 // MongoDB connection
@@ -57,23 +59,10 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(async () => { 
-  console.log("MongoDB connected");
 
-  const existingGuest = await Admin.findOne({ adminID: 'Guest' });
-  if (existingGuest) {
-    console.log('');
-  } else {
-    const guestAdmin = new Admin({
-      adminID: process.env.GUEST_ID,
-      name: process.env.GUEST_NAME,
-      password: process.env.GUEST_PASSWORD, // hash in production
-    });
 
-    await guestAdmin.save();
-    console.log('Guest user added successfully');
-  }
-})
+  
+
 .catch((err) => console.log('MongoDB Error:', err));
 
 // Serve static uploads
@@ -86,6 +75,7 @@ app.use('/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/guest', guestRoutes);
+
 
 const PORT = process.env.PORT || 6131;
 app.listen(PORT, () => console.log(` Server running on port ${PORT}`));

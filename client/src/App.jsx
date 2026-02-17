@@ -58,6 +58,7 @@ const App = () => {
           <Route path="feedbacks" element={<Feedbacks />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="organizations" element={<Organizations />} />
+          
         </Route>
 
         {/* Redirect all unknown routes */}

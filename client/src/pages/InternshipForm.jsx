@@ -4,9 +4,16 @@ import "./InternshipForm.css";
 import Header from "../components/Navbar";
 
 function InternshipForm() {
-  const VITE_ORG_BASE_URL=import.meta.env.VITE_ADMIN_BASE_URL;
+  const VITE_ORG_BASE_URL = import.meta.env.VITE_ORG_BASE_URL;
   const  VITE_INTERNSHIP_BASE_URL = import.meta.env.VITE_INTERNSHIP_BASE_URL;
+  const VITE_ADMIN_BASE_URL = import.meta.env.VITE_ADMIN_BASE_URL;
   const navigate = useNavigate();
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+const [verified, setVerified] = useState(false);
+const [adminOTP, setAdminOTP] = useState("");
+
+const [adminPhones, setAdminPhones] = useState([]);
 
   const [formData, setFormData] = useState({
     rollNo: "",
@@ -27,6 +34,17 @@ function InternshipForm() {
     internshipType: "" // ✅ Local field only
   });
 
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
+
   const [errors, setErrors] = useState({});
   const [offerFile, setOfferFile] = useState(null);
   const [approvalFile, setApprovalFile] = useState(null);
@@ -39,7 +57,7 @@ function InternshipForm() {
     try {
       const res = await fetch(`${VITE_ORG_BASE_URL}`);
       const data = await res.json();
-      console.log("Fetched organizations from API:", data); // ✅ This confirms fetch worked
+    
       setOrganizations(data); // ✅ This sets the state
     } catch (err) {
       console.error("Failed to fetch organizations:", err);
@@ -48,10 +66,79 @@ function InternshipForm() {
   fetchOrganizations();
 }, []);
 
-useEffect(() => {
-  console.log("Updated organizations state:", organizations);
-}, [organizations]);
+const generateOTP = async () => {
+  if (!formData.rollNo) {
+    alert("Enter Roll Number first");
+    return;
+  }
 
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${VITE_INTERNSHIP_BASE_URL}/generate-internship-otp`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token   // 🔥 THIS WAS MISSING
+      },
+      body: JSON.stringify({ rollNo: formData.rollNo })
+    }
+  );
+
+  const data = await res.json();
+
+  if (res.ok) {
+    alert("OTP sent to admin. Please contact admin for verification.");
+    setOtpSent(true);
+  } else {
+    alert(data.error);
+  }
+};
+
+useEffect(() => {
+  const fetchAdminPhones = async () => {
+    try {
+      
+      const res = await fetch(`${VITE_ADMIN_BASE_URL}/admin-phones`,getAuthHeader());
+      const data = await res.json();
+      if (res.ok) {
+        setAdminPhones(data.phoneNumbers);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin phones", err);
+    }
+  };
+
+  fetchAdminPhones();
+}, []);
+
+const verifyOTP = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${VITE_INTERNSHIP_BASE_URL}/verify-internship-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-auth-token": token
+    },
+    body: JSON.stringify({
+      adminOTP   // 🔥 Only this now
+    })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    alert("Verification successful!");
+    setVerified(true);
+  } else {
+    alert(data.error);
+    if (data.error?.includes("Too many attempts")) {
+      window.location.reload();
+    }
+  }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,8 +149,14 @@ useEffect(() => {
     if (name === "internshipType") {
       if (value === "Unpaid") {
         updatedFormData.package = "0";
-      } else if (value === "Paid" && formData.package === "0") {
+      } else{
         updatedFormData.package = "";
+      }
+    }
+
+    if (name === "branch") {
+      if (value === "CSBS") {
+        updatedFormData.section = "A";
       }
     }
 
@@ -138,33 +231,52 @@ useEffect(() => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
+    if (!verified) {
+      alert("Please complete OTP verification before submitting.");
+      return;
+    }
+  
     if (!validateForm()) return;
-
+  
+    const token = localStorage.getItem("token");
+  
     let durationValue = formData.duration;
-
     const rollNo = formData.rollNo;
-
-    const renamedOfferFile = offerFile ? new File([offerFile], `${rollNo}_offer.pdf`, { type: offerFile.type }) : null;
-    const renamedApprovalFile = approvalFile ? new File([approvalFile],` ${rollNo}_approval.pdf`, { type: approvalFile.type }) : null;
-    const renamedNocFile = nocFile ? new File([nocFile], `${rollNo}_noc.pdf`, { type: nocFile.type }) : null;
-
+  
+    const renamedOfferFile = offerFile
+      ? new File([offerFile], `${rollNo}_offer.pdf`, { type: offerFile.type })
+      : null;
+  
+    const renamedApprovalFile = approvalFile
+      ? new File([approvalFile], `${rollNo}_approval.pdf`, { type: approvalFile.type })
+      : null;
+  
+    const renamedNocFile = nocFile
+      ? new File([nocFile], `${rollNo}_noc.pdf`, { type: nocFile.type })
+      : null;
+  
     const form = new FormData();
+  
     for (const key in formData) {
       if (key !== "internshipType") {
         form.append(key, key === "duration" ? durationValue : formData[key]);
       }
     }
+  
     if (renamedOfferFile) form.append("offerLetter", renamedOfferFile);
     if (renamedApprovalFile) form.append("applicationLetter", renamedApprovalFile);
     if (renamedNocFile) form.append("noc", renamedNocFile);
-
+  
     try {
       const res = await fetch(`${VITE_INTERNSHIP_BASE_URL}/submit`, {
         method: "POST",
+        headers: {
+          "x-auth-token": token   // 🔥 THIS WAS MISSING
+        },
         body: form
       });
-
+  
       if (res.ok) {
         alert("Internship details submitted successfully!");
         navigate("/home");
@@ -187,7 +299,7 @@ useEffect(() => {
       <div className="form-container">
         <h1>UG/PG Internship Portal</h1>
         <form className="internship-form" onSubmit={handleSubmit}>
-          {["rollNo", "name", "branch", "section", "email", "phoneNo", "role", "hrEmail", "hrPhone", "duration", "package"].map((field) => (
+        {["rollNo", "name", "email", "phoneNo", "role", "hrEmail", "hrPhone"].map((field) => (
             <div className="form-row" key={field}>
               <input
                 type={field === "email" || field === "hrEmail" ? "email" : "text"}
@@ -200,21 +312,54 @@ useEffect(() => {
               {errors[field] && <span className="error">{errors[field]}</span>}
             </div>
           ))}
+
+        <div className="form-row">
+         
+          <select
+            name="branch"
+            value={formData.branch}
+            onChange={handleChange}
+            required
+          >
+             <option value="">Select Branch</option> 
+            <option value="CSE">CSE</option>
+            <option value="CSBS">CSBS</option>
+          </select>
+        </div>
+
+        <div className="form-row">
+          <label>Section</label>
+          <select
+            name="section"
+            value={formData.section}
+            onChange={handleChange}
+            disabled={formData.branch === "CSBS"}
+            required={formData.branch === "CSE"}
+          >
+            <option value="">Select Section</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
           <div className="form-row">
             <label>Organization Name</label>
             <select
-              name="organizationName"
-              value={formData.organizationName}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select Organization</option>
-              {organizations.map((org) => (
-                <option key={org._id} value={org.name}>
-                  {org.name}
-                </option>
-              ))}
-            </select>
+        name="organizationName"
+        value={formData.organizationName}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Select Organization</option>  {/* 👈 ADD THIS */}
+
+        {Array.isArray(organizations) &&
+          organizations.map((org) => (
+            <option key={org._id} value={org.name}>
+              {org.name}
+            </option>
+          ))}
+</select>
             {errors.organizationName && <span className="error">{errors.organizationName}</span>}
             
             {/* Support note below dropdown */}
@@ -240,6 +385,20 @@ useEffect(() => {
               <option value="Unpaid">Unpaid</option>
             </select>
           </div>
+          <div className="form-row">
+            <label>Package</label>
+            <input
+              type="number"
+              name="package"
+              value={formData.package}
+              onChange={(e) => {
+                if (formData.internshipType === "Unpaid") return;
+                handleChange(e);
+              }}
+              disabled={formData.internshipType === "Unpaid"}
+              required
+            />
+          </div>
 
           <div className="form-row">
             <label>Start-Date</label>
@@ -249,12 +408,68 @@ useEffect(() => {
             <label>End-Date</label>
             <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required />
           </div>
+          <div className="form-row">
+            <label>Duration</label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              readOnly
+            />
+          </div>
 
+          {/* 🔐 OTP Verification Section */}
+        <div className="form-row">
+        <div className="otp-section">
+
+          {!otpSent && (
+            <button type="button" onClick={generateOTP} className="btn btn-warning">
+              Generate OTP
+            </button>
+          )}
+
+          {otpSent && !verified && (
+            <>
+              <input
+                type="text"
+                placeholder="Enter Admin OTP"
+                value={adminOTP}
+                onChange={(e) => setAdminOTP(e.target.value)}
+              />
+
+              <button type="button" onClick={verifyOTP} className="btn btn-success">
+                Verify
+              </button>
+            </>
+          )}
+
+        {otpSent && !verified && (
+          <div style={{ 
+            background: "#fff3cd", 
+            padding: "10px", 
+            borderRadius: "5px", 
+            marginTop: "10px" 
+          }}>
+            <strong>📢 Contact Admin for OTP:</strong>
+            {adminPhones.map((phone, index) => (
+              <div key={index}>📞 +91 {phone}</div>
+            ))}
+          </div>
+        )}
+
+          {verified && (
+            <div style={{ color: "green", fontWeight: "bold" }}>
+              ✅ Verification Complete
+            </div>
+          )}
+          </div>
+        </div>
+            {/* 🔐 File Uploads*/}
           <div className="form-row">
             <label>Upload Offer Letter:(eg.rollno_offer.pdf)</label>
             <div className="custom-file-upload">
               <label htmlFor="offerFile" className="upload-btn">Choose File</label>
-              <input id="offerFile" type="file" accept=".pdf" style={{ display: "none" }}
+              <input id="offerFile" type="file"  disabled={!verified} accept=".pdf" style={{ display: "none" }}
                 onChange={(e) => setOfferFile(e.target.files[0])} required />
               <span className="file-name">
                 {offerFile ? `${formData.rollNo || "ROLLNO"}_offer.pdf` : "No file chosen"}
@@ -266,7 +481,7 @@ useEffect(() => {
             <label>Upload Approval Letter:(eg.rollno_approval.pdf)</label>
             <div className="custom-file-upload">
               <label htmlFor="approvalFile" className="upload-btn">Choose File</label>
-              <input id="approvalFile" type="file" accept=".pdf" style={{ display: "none" }}
+              <input id="approvalFile" type="file"  disabled={!verified} accept=".pdf" style={{ display: "none" }}
                 onChange={(e) => setApprovalFile(e.target.files[0])} required />
               <span className="file-name">
                 {approvalFile ? `${formData.rollNo || "ROLLNO"}_approval.pdf` : "No file chosen"}
@@ -278,7 +493,7 @@ useEffect(() => {
             <label>Upload NOC:(eg.rollno_noc.pdf)</label>
             <div className="custom-file-upload">
               <label htmlFor="nocFile" className="upload-btn">Choose File</label>
-              <input id="nocFile" type="file" accept=".pdf" style={{ display: "none" }}
+              <input id="nocFile" type="file"  disabled={!verified} accept=".pdf" style={{ display: "none" }}
                 onChange={(e) => setNocFile(e.target.files[0])} required />
               <span className="file-name">
                 {nocFile ? `${formData.rollNo || "ROLLNO"}_noc.pdf` : "No file chosen"}

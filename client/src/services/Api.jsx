@@ -7,31 +7,40 @@ const VITE_INTERNSHIP_BASE_URL = import.meta.env.VITE_INTERNSHIP_BASE_URL;
 const VITE_AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL;
 
 // ------------------ ADMIN APIs ------------------
+// ------------------ ADMIN APIs ------------------
+
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  return {
+    headers: {
+      "x-auth-token": token
+    }
+  };
+};
+
 export const getDashboardStats = async () => {
-  try {
-    const res = await axios.get(`${VITE_ADMIN_BASE_URL}/dashboard-stats`);
-    return res.data;
-  } catch (err) {
-    throw err;
-  }
+  const res = await axios.get(
+    `${VITE_ADMIN_BASE_URL}/dashboard-stats`,
+    getAuthHeader()
+  );
+  return res.data;
 };
 
 export const getAllInternships = async () => {
-  try {
-    const res = await axios.get(`${VITE_ADMIN_BASE_URL}/internships`);
-    return res.data;
-  } catch (err) {
-    throw err;
-  }
+  const res = await axios.get(
+    `${VITE_ADMIN_BASE_URL}/internships`,
+    getAuthHeader()
+  );
+  return res.data;
 };
 
 export const updateInternshipStatus = async (id, status) => {
-  try {
-    const res = await axios.patch(`${VITE_INTERNSHIP_BASE_URL}/${id}/status`, { status });
-    return res.data;
-  } catch (err) {
-    throw err;
-  }
+  const res = await axios.patch(
+    `${VITE_INTERNSHIP_BASE_URL}/${id}/status`,
+    { status },
+    getAuthHeader()
+  );
+  return res.data;
 };
 
 // ------------------ AUTH APIs ------------------
@@ -49,7 +58,7 @@ export const registerUser = async (form) => {
 
 export const loginUser = async (credentials) => {
   try {
-    console.log(credentials)
+
     const res = await axios.post(`${VITE_AUTH_BASE_URL}/login`, credentials, {
       headers: { 'Content-Type': 'application/json' },
       withCredentials: true,

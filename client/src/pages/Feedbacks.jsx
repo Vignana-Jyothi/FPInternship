@@ -8,10 +8,19 @@ const Feedbacks = () => {
   const ADMIN_BASE_URL = import.meta.env.VITE_ADMIN_BASE_URL;
   const [feedbacks, setFeedbacks] = useState([]);
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
   useEffect(() => {
     const fetchFeedbacks = async () => {
       try {
-        const res = await axios.get(`${ADMIN_BASE_URL}/feedbacks`);
+        const res = await axios.get(`${ADMIN_BASE_URL}/feedbacks`,getAuthHeader());
         // Ensure it's always an array
         setFeedbacks(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
