@@ -28,7 +28,7 @@ function Login_ad() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("userRole", response.data.role);
   
-      navigate('/admin');
+      window.location.replace('/admin');
     } catch (error) {
 
       setError(error.response?.data?.message || "Login failed");

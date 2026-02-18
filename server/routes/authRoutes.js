@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const sendMail = require('../utils/forgotpasswordEmailservice');
 const JWT_SECRET = process.env.JWT_SECRET;// Use process.env.JWT_SECRET in production
+const role = require('../middleware/role');
 
 // ✅ Register Route
 router.post('/register', async (req, res) => {

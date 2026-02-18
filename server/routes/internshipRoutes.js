@@ -10,6 +10,7 @@ const Internship = require('../models/Internship');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
 const sendMail = require('../utils/forgotpasswordEmailservice');
+const role = require('../middleware/role');
 
 // Ensure uploads directory exists
 const uploadPath = path.join(__dirname, '../uploads');
@@ -36,7 +37,7 @@ const parseDuration = (str) => {
 };
 router.post(
   "/submit",
-  auth,
+  auth,role('student'), 
   upload.fields([
     { name: "offerLetter", maxCount: 1 },
     { name: "applicationLetter", maxCount: 1 },
@@ -45,7 +46,7 @@ router.post(
   async (req, res) => {
     try {
       // 1️⃣ Get logged-in user
-      const user = await User.findById(req.admin.userId);
+      const user = await User.findById(req.user.userId);
 
       if (!user) {
         return res.status(401).json({ error: "User not found" });
@@ -141,7 +142,7 @@ router.post(
 );
 
 // GET: Fetch all submitted internships
-router.get('/all', auth, async (req, res) => {
+router.get('/all', auth, role('student'), async (req, res) => {
   if (req.admin.role !== 'admin') {
     return res.status(403).json({ error: "Access denied" });
   }
@@ -167,9 +168,9 @@ router.get('/all', auth, async (req, res) => {
   }
 });
 
-router.post("/generate-internship-otp", auth, async (req, res) => {
+router.post("/generate-internship-otp", auth,role('student'),  async (req, res) => {
   try {
-    const loggedUser = await User.findById(req.admin.userId);
+    const loggedUser = await User.findById(req.user.userId);
 
     if (!loggedUser || loggedUser.role !== "student") {
       return res.status(403).json({ error: "Unauthorized" });
@@ -217,7 +218,7 @@ Valid for 24 hours.`
   }
 });
 
-router.post("/verify-internship-otp", auth, async (req, res) => {
+router.post("/verify-internship-otp", auth,role('student'),  async (req, res) => {
   try {
     const { adminOTP } = req.body;
 
@@ -225,7 +226,7 @@ router.post("/verify-internship-otp", auth, async (req, res) => {
       return res.status(400).json({ error: "OTP is required." });
     }
 
-    const loggedUser = await User.findById(req.admin.userId);
+    const loggedUser = await User.findById(req.user.userId);
 
     if (!loggedUser || loggedUser.role !== "student") {
       return res.status(403).json({ error: "Unauthorized" });

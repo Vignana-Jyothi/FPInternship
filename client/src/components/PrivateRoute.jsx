@@ -1,12 +1,13 @@
 // src/components/PrivateRoute.jsx
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');  // ✅ FIXED
+  const location = useLocation();
+  const token = localStorage.getItem("token");
 
   if (!token) {
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/admin-login" replace state={{ from: location }} />;
   }
 
   return children;

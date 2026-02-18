@@ -64,9 +64,9 @@ const Landing = () => {
           <div className="card role-card" onClick={() => navigate('/guest-dashboard')}>
             <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" className="card-img-top p-3" alt="Guest" />
             <div className="card-body text-center">
-              <h5 className="card-title fw-bold">Guest Login</h5>
+              <h5 className="card-title fw-bold">Guest Portal</h5>
               <p className="card-text text-muted">For visitors and recruiters.</p>
-              <button className="gradient-button w-100">Login as Guest</button>
+              <button className="gradient-button w-100">Enter as Guest</button>
             </div>
           </div>
         </div>

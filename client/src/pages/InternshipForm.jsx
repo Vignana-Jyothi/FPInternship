@@ -52,6 +52,7 @@ const [adminPhones, setAdminPhones] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"];
 
+
   useEffect(() => {
   const fetchOrganizations = async () => {
     try {
@@ -145,11 +146,10 @@ const verifyOTP = async () => {
 
     let updatedFormData = { ...formData, [name]: value };
 
-    // ✅ Auto-set package for internship type
-    if (name === "internshipType") {t 
+    if (name === "internshipType") {
       if (value === "Unpaid") {
         updatedFormData.package = "0";
-      } else{
+      } else {
         updatedFormData.package = "";
       }
     }
@@ -289,6 +289,8 @@ const verifyOTP = async () => {
       alert("An error occurred.");
     }
   };
+
+
 
   return (
     <>

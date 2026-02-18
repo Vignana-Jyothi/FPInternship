@@ -4,13 +4,13 @@ const auth = require('../middleware/auth');
 const Student = require('../models/User');
 const Internship = require('../models/Internship');
 const Feedback = require('../models/Feedback');
-
+const role = require('../middleware/role');
 
 // 🔐 GET user profile (JWT protected)
-router.get('/profile', auth, async (req, res) => {
+router.get('/profile',auth,role('student'), async (req, res) => {
   try {
     // Get logged-in user from token
-    const student = await Student.findById(req.admin.userId);
+    const student = await Student.findById(req.user.userId);
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
