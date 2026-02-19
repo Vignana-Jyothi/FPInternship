@@ -10,6 +10,7 @@ function Login_ad() {
   const VITE_ADMIN_BASE_URL=import.meta.env.VITE_ADMIN_BASE_URL
   const [adminID, setAdminID] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -76,22 +77,36 @@ function Login_ad() {
               />
             </div>
 
-            <div className="mb-4">
-              <label className="form-label">Password</label>
-              <input
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  borderRadius: '12px',
-                  border: '1px solid #ccc',
-                  boxShadow: 'none'
-                }}
-              />
-            </div>
+            <div className="mb-4 position-relative">
+            <label className="form-label">Password</label>
 
+            <input
+              type={showPassword ? "text" : "password"}
+              className="form-control pe-5"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                borderRadius: '12px',
+                border: '1px solid #ccc',
+                boxShadow: 'none'
+              }}
+            />
+
+            {/* Eye Icon */}
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "38px",
+                cursor: "pointer",
+                color: "#666"
+              }}
+            >
+              <i data-feather={showPassword ? "eye-off" : "eye"}></i>
+            </span>
+          </div>
             <button
                 type="submit"
                 className="gradient-button w-100"

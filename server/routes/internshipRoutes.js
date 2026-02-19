@@ -52,11 +52,6 @@ router.post(
         return res.status(401).json({ error: "User not found" });
       }
 
-      if (user.role !== "student") {
-        return res.status(403).json({
-          error: "Only students can submit internship",
-        });
-      }
 
       const rollNo = user.rollNo;
 
@@ -100,7 +95,7 @@ router.post(
       const requiredFields = [
         "role",
         "organizationName",
-        "hrEmail",
+        
         "duration",
         "package",
         "startingDate",
@@ -168,42 +163,32 @@ router.get('/all', auth, role('student'), async (req, res) => {
   }
 });
 
-router.post("/generate-internship-otp", auth,role('student'),  async (req, res) => {
+router.post("/generate-internship-otp", auth, role('student'), async (req, res) => {
   try {
     const loggedUser = await User.findById(req.user.userId);
-
-    if (!loggedUser || loggedUser.role !== "student") {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
+    if (!loggedUser) return res.status(403).json({ error: "Unauthorized" });
 
     const rollNo = loggedUser.rollNo;
 
     const admin = await Admin.findOne();
-    if (!admin) {
-      return res.status(404).json({ error: "Admin not found" });
-    }
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
 
-    // 🔢 Generate OTP (admin only)
     const adminOTP = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    let internship = await Internship.findOne({ rollNo });
-
-    if (!internship) {
-      internship = new Internship({ rollNo });
-    }
-
-    internship.verificationOTP = adminOTP;
-    internship.verificationExpires = expiry;
-    internship.isVerified = false;
-    internship.otpAttempts = 0;
+    // ✅ ALWAYS create new document
+    const internship = new Internship({
+      rollNo,
+      verificationOTP: adminOTP,
+      verificationExpires: expiry,
+      isVerified: false,
+      otpAttempts: 0
+    });
 
     await internship.save();
 
-    // Respond immediately
     res.json({ message: "OTP sent to admin successfully" });
 
-    // 📧 Send OTP ONLY to admin
     sendMail(
       admin.email,
       "Internship Verification OTP",
@@ -234,9 +219,10 @@ router.post("/verify-internship-otp", auth,role('student'),  async (req, res) =>
 
     const rollNo = loggedUser.rollNo;
 
-    const internship = await Internship
-      .findOne({ rollNo })
-      .sort({ createdAt: -1 });
+    const internship = await Internship.findOne({
+      rollNo,
+      isVerified: false
+    }).sort({ createdAt: -1 });
 
     if (!internship) {
       return res.status(404).json({ error: "OTP not generated yet." });

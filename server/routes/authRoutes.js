@@ -11,6 +11,26 @@ const sendMail = require('../utils/forgotpasswordEmailservice');
 const JWT_SECRET = process.env.JWT_SECRET;// Use process.env.JWT_SECRET in production
 const role = require('../middleware/role');
 
+
+function getPassoutYear(rollNo) {
+  try {
+    const roll = rollNo.trim().toUpperCase();
+
+    const yearPrefix = parseInt(roll.substring(0, 2));
+    const branchCode = roll.substring(2, 5);
+
+    let admissionYear = 2000 + yearPrefix;
+
+    // Lateral entry (075)
+    if (branchCode === "075") {
+      admissionYear -= 1;
+    }
+
+    return admissionYear + 4;
+  } catch (err) {
+    return null;
+  }
+}
 // ✅ Register Route
 router.post('/register', async (req, res) => {
   const { rollNo, name, branch, semester, password, section } = req.body;
@@ -26,7 +46,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-   
+    const passoutYear = getPassoutYear(rollNo);
+
+    if (!passoutYear) {
+      return res.status(400).json({ error: 'Invalid roll number format' });
+    }
 
     const user = new User({
       rollNo,
@@ -36,18 +60,19 @@ router.post('/register', async (req, res) => {
       semester,
       section,
       password,
-      role: 'student'
+      role: 'student',
+      passoutYear
     });
 
     await user.save();
 
     res.status(201).json({ message: 'User registered successfully' });
+
   } catch (err) {
     console.error('Register error:', err.message || err);
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 // ✅ Login Route
 
 router.post('/login', async (req, res) => {
@@ -212,6 +237,116 @@ router.get('/users', async (req, res) => {
   } catch (err) {
     console.error('Get users error:', err.message || err);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/feedbacks', auth, role('student'), async (req, res) => {
+  try {
+    const {
+      internshipID,
+      skillsLearned,
+      technicalSkill,
+      communicationSkill,
+      teamWork,
+      timeManagement,
+      overallExperience
+    } = req.body;
+
+    if (
+      !internshipID ||
+      !skillsLearned ||
+      !technicalSkill ||
+      !communicationSkill ||
+      !teamWork ||
+      !timeManagement ||
+      !overallExperience
+    ) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const internship = await Internship.findOne({
+      _id: internshipID,
+      rollNo: user.rollNo,
+      isVerified: true
+    });
+
+    if (!internship) {
+      return res.status(400).json({ error: 'Invalid internship selected' });
+    }
+
+    const today = new Date();
+    if (today < new Date(internship.endingDate)) {
+      return res.status(400).json({
+        error: 'Feedback can only be submitted after internship ends'
+      });
+    }
+
+    const existingFeedback = await Feedback.findOne({ internshipID });
+    if (existingFeedback) {
+      return res.status(400).json({
+        error: 'Feedback already submitted for this internship'
+      });
+    }
+
+    const newFeedback = new Feedback({
+      internshipID,
+      rollNo: user.rollNo,
+      skillsLearned,
+      technicalSkill,
+      communicationSkill,
+      teamWork,
+      timeManagement,
+      overallExperience
+    });
+
+    await newFeedback.save();
+
+    res.status(201).json({ message: 'Feedback submitted successfully' });
+
+  } catch (err) {
+    console.error("Feedback error:", err);
+    res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
+router.get('/past-internships', auth, role('student'), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    const internships = await Internship.find({
+      rollNo: user.rollNo,
+      isVerified: true
+    });
+
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 🔥 normalize today
+
+    const pastInternships = internships
+      .filter(i => {
+        const end = new Date(i.endingDate);
+        end.setHours(0, 0, 0, 0); // 🔥 normalize end date
+        return end < today;
+      })
+      .map(i => ({
+        _id: i._id,
+        organizationName: i.organizationName,
+        role: i.role,
+        endingDate: i.endingDate
+      }));
+
+   
+
+    res.json(pastInternships);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch internships" });
   }
 });
 

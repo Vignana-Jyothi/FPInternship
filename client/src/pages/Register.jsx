@@ -4,6 +4,8 @@ import { registerUser } from '../services/Api';
 import './Register.css';
 import Header from '../components/Navbar'
 import RegisterPic from '../assets/Register.svg'
+import { LuEye, LuEyeClosed } from "react-icons/lu";
+
 export default function Register() {
   const [form, setForm] = useState({
     rollNo: '',
@@ -23,73 +25,96 @@ export default function Register() {
   const branchOption = ['CSE','CSBS']
   const semesterOptions = ['1-1', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'];
   const sectionOptions = ['A', 'B', 'C', 'D'];
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-  
-    let updatedForm = {
-      ...form,
-      [name]: type === 'checkbox' ? checked : value
-    };
-  
-    // 🔥 If CSBS selected → auto assign section A
-    if (name === "branch" && value === "CSBS") {
-      updatedForm.section = "A";
-    }
-  
-    // 🔥 If switching from CSBS to CSE → clear section
-    if (name === "branch" && value === "CSE") {
-      updatedForm.section = "";
-    }
-  
-    setForm(updatedForm);
+  // 🔐 Password rule checks
+const passwordRules = {
+  length: form.password.length >= 8,
+  uppercase: /[A-Z]/.test(form.password),
+  number: /\d/.test(form.password),
+  special: /[@$!%*?&]/.test(form.password),
+};
+
+const handleChange = (e) => {
+  const { name, value, type, checked } = e.target;
+
+  let updatedValue = type === "checkbox" ? checked : value;
+
+  // 🔥 Roll number logic
+  if (name === "rollNo") {
+    // Remove spaces
+    updatedValue = value.replace(/\s/g, "");
+
+    // Allow only letters & numbers
+    updatedValue = updatedValue.replace(/[^a-zA-Z0-9]/g, "");
+
+    // Convert letters to uppercase
+    updatedValue = updatedValue.toUpperCase();
+  }
+
+  let updatedForm = {
+    ...form,
+    [name]: updatedValue
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    const cleanedEmail = form.email.toLowerCase().trim();
+  // Branch logic (your existing logic)
+  if (name === "branch" && value === "CSBS") {
+    updatedForm.section = "A";
+  }
 
+  if (name === "branch" && value === "CSE") {
+    updatedForm.section = "";
+  }
 
-    if (!cleanedEmail.endsWith('@vnrvjiet.in')) {
-      setError('Email must end with @vnrvjiet.in');
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  setForm(updatedForm);
+};
 
-    if (
-      !form.rollNo || !form.name || !form.email ||
-      !form.branch || !form.semester || !form.section || !form.password
-    ) {
-      setError('Please fill all fields');
-      return;
-    }
+const handleSubmit = async e => {
+  e.preventDefault();
+  const cleanedEmail = form.email.toLowerCase().trim();
 
-    setLoading(true);
-    setError('');
-    try {
-      await registerUser({ ...form, email: cleanedEmail });
-      alert('Registered successfully!');
-      setForm({
-        rollNo: '',
-        name: '',
-        email: '',
-        branch: '',
-        semester: '',
-        section: '',
-        password: '',
-        confirmPassword: '',
-        agree: false
-      });
-      navigate('/student-login');
-    } catch (err) {
-      setError(err.response?.data?.error || 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!cleanedEmail.endsWith('@vnrvjiet.in')) {
+    setError('Email must end with @vnrvjiet.in');
+    return;
+  }
+
+  if (form.password !== form.confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
+
+  // 🔥 BLOCK if password rules fail
+  if (
+    !passwordRules.length ||
+    !passwordRules.uppercase ||
+    !passwordRules.number ||
+    !passwordRules.special
+  ) {
+    setError('Password does not meet security requirements');
+    return;
+  }
+
+  if (
+    !form.rollNo || !form.name || !form.email ||
+    !form.branch || !form.semester || !form.section || !form.password
+  ) {
+    setError('Please fill all fields');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    await registerUser({ ...form, email: cleanedEmail });
+    alert('Registered successfully!');
+    navigate('/student-login');
+  } catch (err) {
+    setError(err.response?.data?.error || 'An error occurred');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div>
@@ -142,7 +167,41 @@ export default function Register() {
               <option key={sec} value={sec}>{sec}</option>
             ))}
           </select>
-            <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Password" required />
+                <div className="password-wrapper">
+        <input
+          type={showPassword ? "text" : "password"}
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          placeholder="Password"
+          required
+          className="password-input"
+        />
+
+        <span
+          className="eye-icon"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? <LuEyeClosed size={20} /> : <LuEye size={20} />}
+        </span>
+      </div>
+
+          {/* 🔥 Live Password Rules */}
+          <div className="password-rules">
+            <p className={passwordRules.length ? "valid" : "invalid"}>
+              • At least 8 characters
+            </p>
+            <p className={passwordRules.uppercase ? "valid" : "invalid"}>
+              • At least one uppercase letter
+            </p>
+            <p className={passwordRules.number ? "valid" : "invalid"}>
+              • At least one number
+            </p>
+            <p className={passwordRules.special ? "valid" : "invalid"}>
+              • At least one special character (@$!%*?&)
+            </p>
+          </div>
+          
             <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Confirm Password" required />
             <button type="submit" className="submit-btn gradient-button" disabled={loading}>
               {loading ? 'Registering...' : 'Sign up'}

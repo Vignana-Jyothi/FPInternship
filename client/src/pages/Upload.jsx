@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Navbar'
+import { useEffect } from 'react';
 
 const Upload = () => {
   const VITE_ADMIN_BASE_URL=import.meta.env.VITE_ADMIN_BASE_URL
+  const VITE_AUTH_BASE_URL=import.meta.env.VITE_AUTH_BASE_URL
+  const VITE_USER_BASE_URL = import.meta.env.VITE_USER_BASE_URL
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     rollNo: '',
+    internshipID: "",
     skillsLearned: '',
     technicalSkill: 1,
     communicationSkill: 1,
@@ -15,91 +19,115 @@ const Upload = () => {
     overallExperience: ''
   });
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
+  
+  const token = localStorage.getItem("token");
+    
+  const [internships, setInternships] = useState([]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Fetch internship details to check end date
+  
+    if (!formData.internshipID) {
+      alert("Please select internship");
+      return;
+    }
+  
     try {
       const token = localStorage.getItem("token");
+  
+      const response = await fetch(`${VITE_ADMIN_BASE_URL}/feedbacks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(formData)
+      });
+  
+      const data = await response.json();
 
-      const internshipRes = await fetch(
-        `${VITE_ADMIN_BASE_URL}/roll/${formData.rollNo}`,
+      if (response.ok) {
+        alert(data.message || 'Feedback submitted successfully!');
+        navigate("/home");
+      } else {
+        alert(data.error || 'Something went wrong');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert("Error submitting feedback");
+    }
+  };
+  useEffect(() => {
+    const fetchInternships = async () => {
+      const token = localStorage.getItem("token");
+  
+      const res = await fetch(
+        `${VITE_ADMIN_BASE_URL}/past-internships`,
         {
           headers: {
             "x-auth-token": token
           }
         }
       );
-      if (!internshipRes.ok) {
-        alert('Could not find internship details for this roll number.');
+  
+      if (!res.ok) {
+    
+        setInternships([]); // prevent crash
         return;
       }
-      const internshipData = await internshipRes.json();
-      const internships = internshipData.internships || [];
-      if (internships.length === 0) {
-        alert('No internship found for this roll number.');
-        return;
-      }
-      const endingDate = new Date(internships[0].endingDate);
-      const today = new Date();
-      if (today < endingDate) {
-        alert('Feedback can only be submitted after the internship ends.');
-        return;
-      }
-    } catch (err) {
-      console.error('Error fetching internship details:', err);
-      alert('Error verifying internship end date.');
-      return;
-    }
+  
+      const data = await res.json();
+  
+      setInternships(Array.isArray(data) ? data : []);
+    };
+  
+    fetchInternships();
+  }, []);
 
- 
-
-    try {
+  useEffect(() => {
+    const fetchData = async () => {
       const token = localStorage.getItem("token");
+  
+      const res = await fetch(`${VITE_USER_BASE_URL}/profile`, {
+        headers: { "x-auth-token": token }
+      });
+  
+      if (!res.ok) {
 
-        const response = await fetch(`${VITE_ADMIN_BASE_URL}/feedbacks`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': token
-          },
-          body: JSON.stringify(formData)
-        });
-
-      if (response.ok) {
-        alert('Feedback submitted successfully!');
-        setFormData({
-          rollNo: '',
-          skillsLearned: '',
-          technicalSkill: '',
-          communicationSkill: '',
-          teamWork: '',
-          timeManagement: '',
-          overallExperience: ''
-        });
-        navigate("/home");
-      } else {
-        const errorData = await response.json();
-        alert('Submission failed: ' + (errorData.error || 'Unknown error'));
+        return;
       }
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      let errorMessage = 'An error occurred while submitting feedback.';
-      try {
-        const errorText = await error.text();
-        errorMessage += ' Details: ' + errorText;
-      } catch {}
-      alert(errorMessage);
-    }
-  };
-
+  
+      const data = await res.json();
+  
+      if (!data.student) return;
+  
+      setFormData(prev => ({
+        ...prev,
+        rollNo: data.student.rollNo
+      }));
+    };
+  
+    fetchData();
+  }, []);
   return (
     <div>
     <Header/>
+    <button className="back-btn btn btn-secondary my-1 mx-2" onClick={() => navigate('/home')}>
+        ⬅ Back to Home
+      </button>
     <div className="container mt-5">
       
       <h2 className="text-center mb-4 mt-4">Submit Feedback</h2>
@@ -107,14 +135,31 @@ const Upload = () => {
         <div className="mb-3">
           <label className="form-label">Roll Number</label>
           <input
-            type="text"
-            name="rollNo"
-            className="form-control"
-            value={formData.rollNo}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        type="text"
+        name="rollNo"
+        className="form-control"
+        value={formData.rollNo}
+        readOnly
+        />
+                </div>
+
+        <div className="mb-3">
+        <label className="form-label">Select Internship</label>
+        <select
+          name="internshipID"
+          className="form-control"
+          value={formData.internshipID}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Select Internship</option>
+          {internships.map(i => (
+            <option key={i._id} value={i._id}>
+              {i.organizationName} - {new Date(i.endingDate).toLocaleDateString()}
+            </option>
+          ))}
+        </select>
+      </div>
         <div className="mb-3">
           <label className="form-label">Skills Learned</label>
           <textarea

@@ -10,7 +10,7 @@ import difflib
 # 🔧 Load Excel
 # =========================
 
-file_path = r"/Users/pramodithakathari/Desktop/2025-26 Internship Candidates Details form (Responses).xlsx"
+file_path = r"/Users/pramodithakathari/Desktop/2025-26 Internship Candidates Details form (Responses) (1).xlsx"
 df = pd.read_excel(file_path)
 
 # Normalize headers
@@ -50,7 +50,6 @@ COLS = {
     "noc": resolve_column("NOC by HoD to student - RollNo_inoc.pdf Example - 22071A0508_inoc.pdf", df.columns),
 }
 
-# Debug print to verify columns
 print("Resolved Columns:")
 for k, v in COLS.items():
     print(f"{k:10} → {v}")
@@ -96,13 +95,34 @@ def parse_date(value):
             return None
 
 # =========================
+# 🎓 Passout Year Calculator
+# =========================
+def get_passout_year(roll):
+    try:
+        roll_str = str(roll).strip().upper()
+
+        year_prefix = int(roll_str[:2])
+        branch_code = roll_str[2:5]
+
+        admission_year = 2000 + year_prefix
+
+        # Lateral entry handling (075)
+        if branch_code == "075":
+            admission_year -= 1
+
+        return admission_year + 4
+
+    except:
+        return None
+
+# =========================
 # 🧹 Clean Users
 # =========================
 required_cols = [COLS["roll"], COLS["name"], COLS["email"]]
 required_cols = [c for c in required_cols if c]
 
 if not required_cols:
-    print("❌ No valid columns found for roll, name, or email. Please check your Excel headers.")
+    print("❌ No valid columns found for roll, name, or email.")
     print("Columns in Excel:", df.columns.tolist())
     exit()
 
@@ -121,8 +141,10 @@ hashed_password = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt
 # =========================
 users_all = []
 seen_rolls = set()
+
 for _, row in df_users.iterrows():
     roll = str(get_safe_value(row, "roll")).strip().upper()
+
     if roll in seen_rolls:
         continue
     seen_rolls.add(roll)
@@ -135,15 +157,20 @@ for _, row in df_users.iterrows():
         "email": get_safe_value(row, "email"),
         "branch": get_safe_value(row, "branch"),
         "password": hashed_password,
-        "role": "student"
+        "role": "student",
+        "passoutYear": get_passout_year(roll)  # ✅ Added
     })
 
 # =========================
-# 🧾 Insert Users (avoid duplicates)
+# 🧾 Insert Users
 # =========================
 existing_rolls = set(x.get("rollNo") for x in users_collection.find({}, {"rollNo": 1}))
 existing_emails = set(x.get("email") for x in users_collection.find({}, {"email": 1}))
-users_to_insert = [u for u in users_all if u["rollNo"] not in existing_rolls and u["email"] not in existing_emails]
+
+users_to_insert = [
+    u for u in users_all
+    if u["rollNo"] not in existing_rolls and u["email"] not in existing_emails
+]
 
 if users_to_insert:
     users_collection.insert_many(users_to_insert)
@@ -152,26 +179,17 @@ else:
     print("ℹ️ No new users to insert.")
 
 # =========================
-# 🏢 Prepare Internships
+# 🏢 Prepare Internships (UNCHANGED)
 # =========================
 internships_all = []
+
 for _, row in df_cleaned.iterrows():
-    roll = get_safe_value(row, "roll")
+    roll = str(get_safe_value(row, "roll")).strip().upper()
     if not roll:
         continue
 
     start = parse_date(get_safe_value(row, "start"))
     end = parse_date(get_safe_value(row, "end"))
-
-    # Overlap check
-    existing_interns = internships_collection.find({"rollNo": roll})
-    for intern in existing_interns:
-        ex_start = intern.get("startingDate")
-        ex_end = intern.get("endingDate")
-        if ex_start and ex_end and start and end:
-            overlap = max(start, ex_start) <= min(end, ex_end)
-            if overlap:
-                print(f"⚠️ Overlapping internship detected for {roll}: {get_safe_value(row, 'org')} overlaps with {intern.get('organizationName')}")
 
     internships_all.append({
         "internshipID": str(uuid.uuid4()),
@@ -193,6 +211,11 @@ for _, row in df_cleaned.iterrows():
         "section": get_safe_value(row, "section"),
         "status": "Pending"
     })
+
+missing_rows = df[df[COLS["roll"]].isna() | 
+                  df[COLS["name"]].isna() | 
+                  df[COLS["email"]].isna()]
+
 
 # =========================
 # 📤 Insert Internships

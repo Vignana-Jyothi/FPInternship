@@ -28,14 +28,14 @@ router.get('/profile',auth,role('student'), async (req, res) => {
     // Get feedbacks
     let feedbacks = await Feedback.find({
       rollNo: student.rollNo
-    });
+    }).populate('internshipID', 'organizationName');
 
     // Enrich feedback with organization name
     feedbacks = feedbacks.map(feedback => {
       const internship = internships.find(
-        i => i.rollNo === feedback.rollNo
+        i => i._id.toString() === feedback.internshipID.toString()
       );
-
+    
       return {
         ...feedback.toObject(),
         organizationName: internship
@@ -65,10 +65,7 @@ router.get('/profile',auth,role('student'), async (req, res) => {
       branch: internship.branch,
       status: internship.status,
     }));
-
-    console.log("Decoded:", req.admin);
-    console.log("Student:", student);
-    console.log("RollNo:", student?.rollNo);
+  
 
     res.json({
       student,

@@ -12,6 +12,7 @@ const Students = () => {
     semester: "",
     branch: "",
     section: "",
+    passoutYear: "",
     academicYear: ""
   });
   const [academicYears, setAcademicYears] = useState([]);
@@ -155,7 +156,7 @@ const Students = () => {
 
 
   {/* Student Name Search */}
-  <div className="col-md-3">
+  <div className="col-md-2">
     <label className="form-label">Student Name</label>
     <input
           type="text"
@@ -167,7 +168,7 @@ const Students = () => {
         />
     </div>
  {/* Academic year Search */}
- <div className="col-md-3">
+ <div className="col-md-2">
             <label className="form-label">Academic Year</label>
             <select
               className="form-select"
@@ -235,6 +236,19 @@ const Students = () => {
     </select>
   </div>
 
+  {/* Passout Year */}
+{/* Grad Year */}
+    <div className="col-md-2">
+      <label className="form-label">Passout Year</label>
+      <input
+        type="number"
+        name="passoutYear"
+        value={filters.passoutYear}
+        onChange={handleChange}
+        className="form-control"
+        placeholder="YYYY or YY"
+      />
+    </div>
 </div>
 
       {/* TABLE */}
@@ -247,6 +261,7 @@ const Students = () => {
             <th>Branch</th>
             <th>Semester</th>
             <th>Section</th>
+            <th>Passout Year</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -257,8 +272,9 @@ const Students = () => {
               <td>{student.name}</td>
               <td>{student.email}</td>
               <td>{student.branch}</td>
-              <td>{student.section}</td>
               <td>{student.semester}</td>
+              <td>{student.section}</td>
+              <td>{student.passoutYear}</td> 
               <td>
                 <button
                   className="btn btn-sm btn-primary me-2"
@@ -267,7 +283,7 @@ const Students = () => {
                   View
                 </button>
                 <button
-                  className="btn btn-sm btn-warning"
+                  className="btn btn-sm mt-2 btn-warning"
                   onClick={() => openEditModal(student)}
                 >
                   Edit

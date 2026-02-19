@@ -85,6 +85,7 @@
         semester: "",
         section: "",
         branch: "",
+        passoutYear: "", 
         year: "",
         month: "",
         endMonth: "",
@@ -106,6 +107,7 @@
       { key: "semester", label: "Semester" },
       { key: "branch", label: "Branch" },
       { key: "section", label: "Section" },
+      { key: "passoutYear", label: "Grad Year" },
       { key: "package", label: "Stipend" },
       { key: "hrEmail", label: "HR Email" },
       { key: "hrPhone", label: "HR Phone" },
@@ -289,6 +291,7 @@
         endMonth: "",
         endYear: "",
         company: "",
+        passoutYear: "", 
       };
       setFilters(cleared);
       // Call fetchInternships with cleared filters
@@ -409,6 +412,19 @@
                     </select>
                   </div>
 
+                              {/* Passout Year */}
+            <div className="col-md-3">
+              <label className="form-label">Grad Year</label>
+              <input
+                type="number"
+                className="form-control"
+                name="passoutYear"
+                value={filters.passoutYear}
+                onChange={handleChange}
+                placeholder="YYYY or YY"
+              />
+            </div>
+
                   {/* Start Year */}
                   <div className="col-md-3">
                     <label className="form-label">Academic Year</label>
@@ -472,6 +488,7 @@
                       <th>Semester</th>
                       <th>Branch</th>
                       <th>Section</th>
+                      <th>Passout Year</th>
                       <th>Stipend</th>
                       <th>Hr mail</th>
                       <th>Hr phone</th>
@@ -492,6 +509,7 @@
                         <td>{i.semester || "-"}</td>
                         <td>{i.branch || "-"}</td>
                         <td>{i.section || "-"}</td>
+                        <td>{i.passoutYear || "-"}</td>
                         <td>{i.package || "unpaid"}</td>
                         <td>{i.hrEmail || "-"}</td>
                         <td>{i.hrPhone || "-"}</td>

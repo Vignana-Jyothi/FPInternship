@@ -7,6 +7,7 @@ function InternshipForm() {
   const VITE_ORG_BASE_URL = import.meta.env.VITE_ORG_BASE_URL;
   const  VITE_INTERNSHIP_BASE_URL = import.meta.env.VITE_INTERNSHIP_BASE_URL;
   const VITE_ADMIN_BASE_URL = import.meta.env.VITE_ADMIN_BASE_URL;
+  const VITE_USER_BASE_URL=import.meta.env.VITE_USER_BASE_URL;
   const navigate = useNavigate();
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -51,6 +52,42 @@ const [adminPhones, setAdminPhones] = useState([]);
   const [nocFile, setNocFile] = useState(null);
   const [organizations, setOrganizations] = useState([]);
   const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"];
+
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+      try {
+        const token = localStorage.getItem("token");
+  
+        const res = await fetch(
+          `${VITE_USER_BASE_URL}/profile`,
+          {
+            headers: {
+              "x-auth-token": token
+            }
+          }
+        );
+  
+        const data = await res.json();
+  
+        if (res.ok) {
+          setFormData((prev) => ({
+            ...prev,
+            rollNo: data.student.rollNo,
+            name: data.student.name,
+            branch: data.student.branch,
+            semester: data.student.semester,
+            section: data.student.section,
+            email: data.student.email
+          }));
+        }
+          
+      } catch (err) {
+        console.error("Failed to fetch student profile:", err);
+      }
+    };
+  
+    fetchStudentProfile();
+  }, []);
 
 
   useEffect(() => {
@@ -189,9 +226,10 @@ const verifyOTP = async () => {
       setErrors({ ...errors, email: "Email must end with @vnrvjiet.in" });
     } else if (name === "phoneNo" && !/^\d{10}$/.test(value)) {
       setErrors({ ...errors, phoneNo: "Mobile number must be exactly 10 digits" });
-    } else if (name === "hrPhone" && !/^\d{10}$/.test(value)) {
-      setErrors({ ...errors, hrPhone: "HR mobile number must be exactly 10 digits" });
-    } else if (name === "hrEmail" && !/^\S+@\S+\.\S+$/.test(value)) {
+    } else if (name === "hrPhone" && !/^\d{10,15}$/.test(value)) {
+      alert("HR Mobile number must be between 10 and 15 digits.");
+      return false;
+    } else if (name === "hrEmail" && value && !/^\S+@\S+\.\S+$/.test(value)) {
       setErrors({ ...errors, hrEmail: "Enter a valid HR email address" });
     } else {
       setErrors({ ...errors, [name]: "" });
@@ -200,32 +238,50 @@ const verifyOTP = async () => {
 
   const validateForm = () => {
     for (const key in formData) {
-      if (key === "internshipType") continue; // ✅ Local only
+  
+      // 🔥 Skip optional fields
+      if (key === "internshipType" || key === "hrEmail" || key === "hrPhone") {
+        continue;
+      }
+  
       if (formData[key].trim() === "") {
         alert(`${key} is required.`);
         return false;
       }
     }
+  
     if (!offerFile || !approvalFile || !nocFile) {
       alert("All files are required.");
       return false;
     }
+  
     if (new Date(formData.startDate) >= new Date(formData.endDate)) {
       alert("Start Date must be earlier than End Date.");
       return false;
     }
+  
     if (!formData.email.endsWith("@vnrvjiet.in")) {
       alert("Email must end with @vnrvjiet.in");
       return false;
     }
+  
     if (!/^\d{10}$/.test(formData.phoneNo)) {
       alert("Mobile number must be exactly 10 digits.");
       return false;
     }
-    if (!/^\d{10}$/.test(formData.hrPhone)) {
-      alert("HR Mobile number must be exactly 10 digits.");
+  
+    // ✅ Only validate HR phone if entered
+    if (formData.hrPhone && !/^\d{10,15}$/.test(formData.hrPhone)) {
+      alert("HR Mobile number must be between 10 and 15 digits.");
       return false;
     }
+  
+    // ✅ Only validate HR email if entered
+    if (formData.hrEmail && !/^\S+@\S+\.\S+$/.test(formData.hrEmail)) {
+      alert("Enter valid HR email address.");
+      return false;
+    }
+  
     return true;
   };
 
@@ -301,19 +357,54 @@ const verifyOTP = async () => {
       <div className="form-container">
         <h1>UG/PG Internship Portal</h1>
         <form className="internship-form" onSubmit={handleSubmit}>
-        {["rollNo", "name", "email", "phoneNo", "role", "hrEmail", "hrPhone"].map((field) => (
-            <div className="form-row" key={field}>
-              <input
-                type={field === "email" || field === "hrEmail" ? "email" : "text"}
-                name={field}
-                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                value={formData[field]}
-                onChange={handleChange}
-                required
-              />
-              {errors[field] && <span className="error">{errors[field]}</span>}
-            </div>
-          ))}
+
+        <div className="form-row">
+        
+        <input
+          type="text"
+          name="rollNo"
+          value={formData.rollNo}
+          readOnly
+          className="readonly-field"
+        />
+      </div>
+            {["name", "email", "phoneNo", "role"].map((field) => (
+        <div className="form-row" key={field}>
+          <input
+            type={field === "email" ? "email" : "text"}
+            name={field}
+            placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+            value={formData[field]}
+            onChange={handleChange}
+            required
+          />
+          {errors[field] && <span className="error">{errors[field]}</span>}
+        </div>
+      ))}
+
+      {/* HR Email - Optional */}
+      <div className="form-row">
+        <input
+          type="email"
+          name="hrEmail"
+          placeholder="HR Email (optional)"
+          value={formData.hrEmail}
+          onChange={handleChange}
+        />
+        {errors.hrEmail && <span className="error">{errors.hrEmail}</span>}
+      </div>
+
+      {/* HR Phone - Optional */}
+      <div className="form-row">
+        <input
+          type="text"
+          name="hrPhone"
+          placeholder="HR Phone (optional)"
+          value={formData.hrPhone}
+          onChange={handleChange}
+        />
+        {errors.hrPhone && <span className="error">{errors.hrPhone}</span>}
+      </div>
 
         <div className="form-row">
          

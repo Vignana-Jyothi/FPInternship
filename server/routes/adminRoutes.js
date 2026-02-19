@@ -199,6 +199,7 @@ router.get("/internships/filter",role('admin'), async (req, res) => {
       endYear,
       endMonth,
       company,
+      passoutYear 
     } = req.query;
 
     const today = new Date();
@@ -290,6 +291,17 @@ if (!req.query.year && req.query.month) {
       studentFilter.branch =
         branch === "Other" ? { $nin: knownBranches } : branch;
     }
+    if (passoutYear) {
+      const yearStr = passoutYear.toString();
+    
+      if (yearStr.length === 2) {
+        // If admin types 27 → match 2027
+        studentFilter.passoutYear = parseInt("20" + yearStr, 10);
+      } else {
+        studentFilter.passoutYear = parseInt(yearStr, 10);
+      }
+    }
+
 
     const students = await User.find(studentFilter);
     const studentMap = {};
@@ -306,13 +318,14 @@ if (!req.query.year && req.query.month) {
         let status =
           today < start ? "future" : today > end ? "past" : "ongoing";
 
-        return {
-          ...i,
-          status,
-          semester: st.semester,
-          branch: st.branch,
-          section: st.section,
-        };
+          return {
+            ...i,
+            status,
+            semester: st.semester,
+            branch: st.branch,
+            section: st.section,
+            passoutYear: st.passoutYear   // ✅ ADD THIS
+          };
       });
 
     res.json(final);
@@ -341,7 +354,7 @@ router.patch('/internships/:id/status',role('admin'), async (req, res) => {
 // Get x with optional semester and section filters
 router.get('/Users',role('admin'), async (req, res) => {
   try {
-    const { search, semester, branch, section, academicYear } = req.query;
+    const { search, semester, branch, section, academicYear, passoutYear } = req.query;
 
     const userQuery = {};
 
@@ -355,6 +368,15 @@ router.get('/Users',role('admin'), async (req, res) => {
 
     if (semester) userQuery.semester = semester;
     if (section) userQuery.section = section;
+
+    if (passoutYear) {
+      userQuery.$expr = {
+        $regexMatch: {
+          input: { $toString: "$passoutYear" },
+          regex: passoutYear.toString()
+        }
+      };
+    }
 
     const knownBranches = ["CSE", "CSBS"];
     if (branch) {
@@ -424,76 +446,26 @@ router.get('/internships',role('admin'), async (req, res) => {
 
 // Get all feedbacks
 // Get all feedbacks
-router.get('/feedbacks', role('admin'),async (req, res) => {
+router.get('/feedbacks', auth, role('admin'), async (req, res) => {
   try {
-    const feedbacks = await Feedback.find().sort({ createdAt: -1 }); // latest first
+    const feedbacks = await Feedback.find()
+      .populate({
+        path: "internshipID",
+        model: "internship",
+        select: "organizationName startingDate endingDate"
+      })
+      .sort({ createdAt: -1 });
+
     res.json(feedbacks);
+
   } catch (err) {
-    console.error('Error fetching feedbacks:', err);
-    res.status(500).json({ error: 'Failed to fetch feedbacks' });
+    console.error("Error fetching feedbacks:", err);
+    res.status(500).json({ error: "Failed to fetch feedbacks" });
   }
 });
 
-// Submit feedback with basic validation
-router.post('/feedbacks',role('admin'), async (req, res) => {
-  try {
-    const {
-      rollNo,
-      skillsLearned,
-      technicalSkill,
-      communicationSkill,
-      teamWork,
-      timeManagement,
-      overallExperience,
-    } = req.body;
 
-    // Basic validation
-    if (
-      !rollNo ||
-      !skillsLearned ||
-      !technicalSkill ||
-      !communicationSkill ||
-      !teamWork ||
-      !timeManagement ||
-      !overallExperience
-    ) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
 
-    
-
-    // Check if internship has ended before allowing feedback
-    
-    const internship = await Internship.findOne({ rollNo:rollNo });
-    if (!internship) {
-      return res.status(400).json({ error: 'No internship found for this roll number' });
-    }
-
-    const today = new Date();
-    const endingDate = new Date(internship.endingDate);
-
-    if (today < endingDate) {
-      return res.status(400).json({ error: 'Feedback can only be submitted after the internship ends' });
-    }
-
-    const newFeedback = new Feedback({
-      rollNo,
-      skillsLearned,
-      technicalSkill,
-      communicationSkill,
-      teamWork,
-      timeManagement,
-      overallExperience,
-    });
-
-    await newFeedback.save();
-
-    res.status(201).json({ message: 'Feedback submitted successfully' });
-  } catch (err) {
-    console.error('Feedback submission error:', err);
-    res.status(500).json({ error: 'Failed to submit feedback' });
-  }
-});
 
 // Analytics route: branch & semester counts for internships with optional filters
 router.get('/analytics',role('admin'), async (req, res) => {
@@ -644,7 +616,7 @@ router.get('/yearly-analytics', role('admin'),async (req, res) => {
 
 
 // Get User + their internships by roll number
-router.get('/roll/:rollNo',role('admin'), async (req, res) => {
+router.get('/roll/:rollNo',role('student'), async (req, res) => {
   try {
     const rollNo = req.params.rollNo.toUpperCase();
 
@@ -744,6 +716,139 @@ router.get('/remind-feedback',role('admin'), async (req, res) => {
     res.status(500).json({ error: 'Failed to send reminders.' });
   }
 });
+
+router.post('/feedbacks', auth, role('student'), async (req, res) => {
+  try {
+    const {
+      internshipID,
+      skillsLearned,
+      technicalSkill,
+      communicationSkill,
+      teamWork,
+      timeManagement,
+      overallExperience
+    } = req.body;
+
+    // ✅ Validation
+    if (
+      !internshipID ||
+      !skillsLearned ||
+      !technicalSkill ||
+      !communicationSkill ||
+      !teamWork ||
+      !timeManagement ||
+      !overallExperience
+    ) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // ✅ Get logged-in student
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // ✅ Check internship belongs to student
+    const internship = await Internship.findOne({
+      _id: internshipID,
+      rollNo: user.rollNo
+    });
+
+    if (!internship) {
+      return res.status(400).json({ error: 'Invalid internship selected' });
+    }
+
+    // ✅ Check internship ended
+    const today = new Date();
+    if (today < new Date(internship.endingDate)) {
+      return res.status(400).json({
+        error: 'Feedback can only be submitted after internship ends'
+      });
+    }
+
+    // ✅ Duplicate protection
+    const existingFeedback = await Feedback.findOne({ internshipID });
+    if (existingFeedback) {
+      return res.status(400).json({
+        error: 'Feedback already submitted for this internship'
+      });
+    }
+
+    // ✅ Save feedback
+    const newFeedback = new Feedback({
+      internshipID,
+      rollNo: user.rollNo,
+      skillsLearned,
+      technicalSkill,
+      communicationSkill,
+      teamWork,
+      timeManagement,
+      overallExperience
+    });
+
+    await newFeedback.save();
+    return res.status(201).json({
+      message: 'Feedback submitted successfully'
+    });
+
+  } catch (err) {
+    console.error("Feedback error:", err);
+
+    // 🔥 Handle duplicate key error if using unique:true
+    if (err.code === 11000) {
+      return res.status(400).json({
+        error: 'Feedback already submitted for this internship'
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Failed to submit feedback'
+    });
+  }
+});
+router.get('/past-internships', auth, role('student'), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const internships = await Internship.find({
+      rollNo: user.rollNo,
+      
+    });
+
+    const feedbacks = await Feedback.find({
+      rollNo: user.rollNo
+    }).select("internshipID");
+
+    const submittedIDs = feedbacks.map(f => f.internshipID.toString());
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = internships
+      .filter(i => {
+        const end = new Date(i.endingDate);
+        end.setHours(0, 0, 0, 0);
+
+        return end < today && !submittedIDs.includes(i._id.toString());
+      })
+      .map(i => ({
+        _id: i._id,
+        organizationName: i.organizationName,
+        role: i.role,
+        endingDate: i.endingDate
+      }));
+
+    
+
+    res.json(result);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch internships" });
+  }
+});
+
 
 
 

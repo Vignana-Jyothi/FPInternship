@@ -86,6 +86,10 @@ export default function Profile() {
         </div>
       </header>
 
+      <button className="back-btn btn btn-secondary my-1 mx-2" onClick={() => navigate('/home')}>
+        ⬅ Back to Home
+      </button>
+
       <div className="container">
         <h2 className="text-center mb-5 text-primary fw-bold d-flex align-items-center justify-content-center gap-3">
           <img src={ProfilePic} alt="Profile" style={{ width: '100px', height: '200px' }} />
