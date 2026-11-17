@@ -73,7 +73,7 @@ app.use('/api/organization', organizationRoutes);
 app.use('/guest', guestRoutes);
 
 
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 6131;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
