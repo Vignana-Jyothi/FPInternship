@@ -183,13 +183,29 @@ export default function Profile() {
 
               {/* Feedback Tab */}
               <div className="tab-pane fade" id="feedbacks">
-                <div className="d-flex justify-content-center py-4">
-                  <div className="profile-card">
-                    <h4 className="text-center text-secondary mb-4">📝 Feedback Section</h4>
+              <div className="d-flex justify-content-center py-4">
+                <div className="profile-card">
+                  <h4 className="text-center text-secondary mb-4">📝 Feedback Section</h4>
+
+                  {userProfile.feedbacks?.length > 0 ? (
+                    userProfile.feedbacks.map((feedback, idx) => (
+                      <div key={idx} className="profile-list-group-item">
+                        <p><strong>Company:</strong> {feedback.organizationName || "N/A"}</p>
+                        <p><strong>Skills Learned:</strong> {feedback.skillsLearned}</p>
+                        <p><strong>Technical Skill:</strong> {feedback.technicalSkill}</p>
+                        <p><strong>Communication:</strong> {feedback.communicationSkill}</p>
+                        <p><strong>Team Work:</strong> {feedback.teamWork}</p>
+                        <p><strong>Time Management:</strong> {feedback.timeManagement}</p>
+                        <p><strong>Overall Experience:</strong> {feedback.overallExperience}</p>
+                      </div>
+                    ))
+                  ) : (
                     <p className="text-center text-muted">No feedbacks yet.</p>
-                  </div>
+                  )}
+
                 </div>
               </div>
+            </div>
             </div>
           </>
         )}

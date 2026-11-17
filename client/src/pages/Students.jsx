@@ -194,14 +194,14 @@ const Students = () => {
       className="form-select"
     >
       <option value="">All</option>
-      <option value="I-I">1-1</option>
-      <option value="I-II">1-2</option>
-      <option value="II-I">2-1</option>
-      <option value="II-II">2-2</option>
-      <option value="III-I">3-1</option>
-      <option value="III-II">3-2</option>
-      <option value="IV-I">4-1</option>
-      <option value="IV-II">4-2</option>
+      <option value="I-I">I-I</option>
+      <option value="I-II">I-II</option>
+      <option value="II-I">II-I</option>
+      <option value="II-II">II-II</option>
+      <option value="III-I">III-I</option>
+      <option value="III-II">III-II</option>
+      <option value="IV-I">IV-I</option>
+      <option value="IV-II">IV-II</option>
     </select>
   </div>
 

@@ -24,7 +24,7 @@ const Sidebar = () => {
     localStorage.clear();
   
 
-    window.location.replace("/admin-login");
+    window.location.replace("/");
   };
 
   return (

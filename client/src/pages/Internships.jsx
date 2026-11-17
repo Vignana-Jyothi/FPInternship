@@ -375,12 +375,12 @@
                     <label className="form-label">Semester</label>
                     <select className="form-select" name="semester" value={filters.semester} onChange={handleChange}>
                       <option value="">All Semesters</option>
-                      <option value="II-I">2-1</option>
-                      <option value="II-II">2-2</option>
-                      <option value="III-I">3-1</option>
-                      <option value="III-II">3-2</option>
-                      <option value="IV-I">4-1</option>
-                      <option value="IV-II">4-2</option>
+                      <option value="II-I">II-I</option>
+                      <option value="II-II">II-II</option>
+                      <option value="III-I">III-I</option>
+                      <option value="III-II">III-II</option>
+                      <option value="IV-I">IV-I</option>
+                      <option value="IV-II">IV-II</option>
                     </select>
                   </div>
 
@@ -501,7 +501,7 @@
 
                       <tr key={i._id}>
                         <td>{i.rollNo}</td>
-                        <td>{normalizeCompanyName(i.organizationName.toLowerCase())}</td>
+                        <td>{normalizeCompanyName(i.organizationName?.toLowerCase() || "")}</td>
                         <td>{i.role}</td>
                         <td>{new Date(i.startingDate).toLocaleDateString()}</td>
                         <td>{new Date(i.endingDate).toLocaleDateString()}</td>

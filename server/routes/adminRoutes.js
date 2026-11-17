@@ -14,6 +14,7 @@ const role = require('../middleware/role');
 const sendMail = require("../utils/forgotpasswordEmailservice");
 
 
+
 router.get("/admin-phones", async (req, res) => {
   try {
     const admin = await Admin.findOne();
@@ -35,12 +36,16 @@ router.post('/login', async (req, res) => {
   try {
   
 
-    const trimmedID = adminID.trim();
+    const trimmedID = adminID.trim()
 
     const allAdmins = await Admin.find();
+
+
+const admin = await Admin.findOne({ adminID: trimmedID });
+
   
 
-    const admin = await Admin.findOne({ adminID: trimmedID });
+
    
 
     if (!admin) {
@@ -135,14 +140,13 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-router.use(auth);
 
 // Converts DB Date object into intended DD/MM interpretation
 
 
 
 // Basic test route for admin
-router.get('/', role('admin'),async (req, res) => {
+router.get('/', auth,role('admin'),async (req, res) => {
   try {
     const admins = await Admin.find();
     res.json({ message: "admin", payload: admins });
@@ -151,7 +155,7 @@ router.get('/', role('admin'),async (req, res) => {
   }
 });
 
-router.get('/internships/academic-years',role('admin'), async (req, res) => {
+router.get('/internships/academic-years',auth,role('admin'), async (req, res) => {
   try {
     const internships = await Internship.find(
       { startingDate: { $exists: true, $ne: null } },
@@ -187,7 +191,7 @@ router.get('/internships/academic-years',role('admin'), async (req, res) => {
 });
 
 
-router.get("/internships/filter",role('admin'), async (req, res) => {
+router.get("/internships/filter",auth,role('admin'), async (req, res) => {
   try {
     const {
       type,
@@ -339,7 +343,7 @@ if (!req.query.year && req.query.month) {
 
 
 // Update internship status
-router.patch('/internships/:id/status',role('admin'), async (req, res) => {
+router.patch('/internships/:id/status',auth,role('admin'), async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -352,7 +356,7 @@ router.patch('/internships/:id/status',role('admin'), async (req, res) => {
 });
 
 // Get x with optional semester and section filters
-router.get('/Users',role('admin'), async (req, res) => {
+router.get('/Users',auth,role('admin'), async (req, res) => {
   try {
     const { search, semester, branch, section, academicYear, passoutYear } = req.query;
 
@@ -416,7 +420,7 @@ router.get('/Users',role('admin'), async (req, res) => {
 
 
 // Dashboard stats
-router.get('/dashboard-stats',role('admin'), async (req, res) => {
+router.get('/dashboard-stats',auth,role('admin'), async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalInternships = await Internship.countDocuments();
@@ -468,7 +472,7 @@ router.get('/feedbacks', auth, role('admin'), async (req, res) => {
 
 
 // Analytics route: branch & semester counts for internships with optional filters
-router.get('/analytics',role('admin'), async (req, res) => {
+router.get('/analytics',auth,role('admin'), async (req, res) => {
   try {
     const { status, academicYear, section } = req.query;
 
@@ -567,7 +571,7 @@ function getAcademicYearFromMongoDate(dbDate) {
   // January (1) to May (5) → previousYear-currentYear
   return `${year - 1}-${year.toString().slice(-2)}`;
 }
-router.get('/yearly-analytics', role('admin'),async (req, res) => {
+router.get('/yearly-analytics',auth, role('admin'),async (req, res) => {
   try {
     const internships = await Internship.find({
       startingDate: { $exists: true, $ne: null }
@@ -616,7 +620,7 @@ router.get('/yearly-analytics', role('admin'),async (req, res) => {
 
 
 // Get User + their internships by roll number
-router.get('/roll/:rollNo',role('student'), async (req, res) => {
+router.get('/roll/:rollNo',auth,role('admin'), async (req, res) => {
   try {
     const rollNo = req.params.rollNo.toUpperCase();
 
@@ -663,7 +667,7 @@ router.get('/roll/:rollNo',role('student'), async (req, res) => {
 
 
 
-router.get('/add', role('admin'),async (req, res) => {
+router.get('/add', auth,role('admin'),async (req, res) => {
 
   try {
     const admin = await Admin.find();
@@ -674,7 +678,7 @@ router.get('/add', role('admin'),async (req, res) => {
   }
 });
 
-router.delete("/internships/:id", role('admin'),async (req, res) => {
+router.delete("/internships/:id", auth,role('admin'),async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await Internship.findByIdAndDelete(id);

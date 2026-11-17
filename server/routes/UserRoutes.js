@@ -20,10 +20,14 @@ router.get('/profile',auth,role('student'), async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+
+   
     // Get internships
     const internships = await Internship.find({
       rollNo: student.rollNo
     });
+
+
 
     // Get feedbacks
     let feedbacks = await Feedback.find({
@@ -31,18 +35,10 @@ router.get('/profile',auth,role('student'), async (req, res) => {
     }).populate('internshipID', 'organizationName');
 
     // Enrich feedback with organization name
-    feedbacks = feedbacks.map(feedback => {
-      const internship = internships.find(
-        i => i._id.toString() === feedback.internshipID.toString()
-      );
-    
-      return {
-        ...feedback.toObject(),
-        organizationName: internship
-          ? internship.organizationName
-          : 'Unknown Organization'
-      };
-    });
+    feedbacks = feedbacks.map(feedback => ({
+      ...feedback.toObject(),
+      organizationName: feedback.internshipID?.organizationName || "Unknown Organization"
+    }));
 
     // Clean internship response
     const internshipsWithDetails = internships.map(internship => ({

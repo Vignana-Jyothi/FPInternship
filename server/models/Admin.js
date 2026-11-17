@@ -39,4 +39,4 @@ AdminSchema.methods.comparePassword = function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-module.exports = mongoose.model("Admin", AdminSchema, "Admins");
+module.exports = mongoose.model("Admin", AdminSchema, "Admin");

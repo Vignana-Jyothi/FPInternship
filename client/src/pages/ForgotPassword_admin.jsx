@@ -5,6 +5,7 @@ import VnrNavbar from "../components/Navbar";
 
 const ForgotPassword_admin = () => {
   const API = import.meta.env.VITE_ADMIN_BASE_URL;
+  console.log("ADMIN API:", API);
 
   const [adminID, setAdminID] = useState("");
   const [otpSent, setOtpSent] = useState(false);

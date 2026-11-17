@@ -257,4 +257,39 @@ router.post("/verify-internship-otp", auth,role('student'),  async (req, res) =>
   }
 });
 
+router.get('/section-analytics', async (req, res) => {
+  try {
+    const data = await Internship.aggregate([
+      {
+        $match: {
+          branch: { $regex: "^CSE$", $options: "i" }, // case-insensitive
+          section: { $exists: true, $ne: null }       // valid sections only
+        }
+      },
+      {
+        $group: {
+          _id: "$section",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          section: "$_id",
+          count: 1,
+          _id: 0
+        }
+      },
+      {
+        $sort: { section: 1 }
+      }
+    ]);
+
+    console.log("Section Analytics:", data);
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 module.exports = router;

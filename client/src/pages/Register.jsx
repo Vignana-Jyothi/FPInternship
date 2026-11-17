@@ -23,7 +23,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const branchOption = ['CSE','CSBS']
-  const semesterOptions = ['1-1', '2-1', '2-2', '3-1', '3-2', '4-1', '4-2'];
+  const semesterOptions = ['I-I','I-II', 'II-I', 'II-II', 'III-I', 'III-II', 'IV-I', 'IV-II'];
   const sectionOptions = ['A', 'B', 'C', 'D'];
   const [showPassword, setShowPassword] = useState(false);
 
