@@ -1,0 +1,69 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, dev]
+
+jobs:
+  deploy:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: main
+            runner_label: gamma
+            env_name: production
+          - branch: dev
+            runner_label: dev-ai
+            env_name: development
+    if: github.ref == format('refs/heads/{0}', matrix.branch)
+    runs-on: [self-hosted, "${{ matrix.runner_label }}"]
+    environment: ${{ matrix.env_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write server runtime config
+        run: |
+          cat > server/.env <<EOF
+          PORT=${{ vars.SERVER_PORT }}
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+          ADMIN_ID=${{ secrets.ADMIN_ID }}
+          ADMIN_NAME=${{ secrets.ADMIN_NAME }}
+          ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PHONE=${{ secrets.ADMIN_PHONE }}
+          ADMIN_DEPT=${{ secrets.ADMIN_DEPT }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          GUEST_ID=${{ secrets.GUEST_ID }}
+          GUEST_NAME=${{ secrets.GUEST_NAME }}
+          GUEST_PASSWORD=${{ secrets.GUEST_PASSWORD }}
+          EOF
+
+      - name: Write compose/client build config
+        run: |
+          cat > .env <<EOF
+          SERVER_PORT=${{ vars.SERVER_PORT }}
+          CLIENT_PORT=${{ vars.CLIENT_PORT }}
+          VITE_BACKEND_PORT=${{ vars.VITE_BACKEND_PORT }}
+          VITE_CLIENT_PORT=${{ vars.VITE_CLIENT_PORT }}
+          VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }}
+          VITE_ADMIN_BASE_URL=${{ vars.VITE_ADMIN_BASE_URL }}
+          VITE_INTERNSHIP_BASE_URL=${{ vars.VITE_INTERNSHIP_BASE_URL }}
+          VITE_AUTH_BASE_URL=${{ vars.VITE_AUTH_BASE_URL }}
+          VITE_GUEST_BASE_URL=${{ vars.VITE_GUEST_BASE_URL }}
+          VITE_ORG_BASE_URL=${{ vars.VITE_ORG_BASE_URL }}
+          VITE_USER_BASE_URL=${{ vars.VITE_USER_BASE_URL }}
+          EOF
+
+      - name: Build images
+        run: docker compose --project-name "fpinternship-${{ matrix.env_name }}" build
+
+      - name: Deploy
+        run: docker compose --project-name "fpinternship-${{ matrix.env_name }}" up -d --remove-orphans
+
+      - name: Prune dangling images
+        run: docker image prune -f
