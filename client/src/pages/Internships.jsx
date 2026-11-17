@@ -55,6 +55,15 @@
   
     /* ============================= */
 
+    const getAuthHeader = () => {
+      const token = localStorage.getItem("token");
+      return {
+        headers: {
+          "x-auth-token": token
+        }
+      };
+    };
+
     
     
     const normalizeCompanyName = (name) => {
@@ -76,6 +85,7 @@
         semester: "",
         section: "",
         branch: "",
+        passoutYear: "", 
         year: "",
         month: "",
         endMonth: "",
@@ -97,6 +107,7 @@
       { key: "semester", label: "Semester" },
       { key: "branch", label: "Branch" },
       { key: "section", label: "Section" },
+      { key: "passoutYear", label: "Grad Year" },
       { key: "package", label: "Stipend" },
       { key: "hrEmail", label: "HR Email" },
       { key: "hrPhone", label: "HR Phone" },
@@ -126,8 +137,8 @@
       const fetchAcademicYears = async () => {
         try {
           const res = await axios.get(
-            `${VITE_ADMIN_BASE_URL}/internships/academic-years`
-          );
+            `${VITE_ADMIN_BASE_URL}/internships/academic-years`,
+            getAuthHeader());
           setAcademicYears(res.data); 
           // [{ label: "2025-26", value: 2025 }, ...]
         } catch (err) {
@@ -143,7 +154,7 @@
         try {
           const res = await fetch(`${VITE_ORG_BASE_URL}`);
           const data = await res.json();
-          console.log("Fetched organizations from API:", data); // ✅ This confirms fetch worked
+         
           setCompanies(data); // ✅ This sets the state
         } catch (err) {
           console.error("Failed to fetch organizations:", err);
@@ -212,7 +223,7 @@
       const fetchInternships = async () => {
         const query = buildQuery();
         try {
-          const res = await axios.get(`${VITE_ADMIN_BASE_URL}/internships/filter?${query}`);
+          const res = await axios.get(`${VITE_ADMIN_BASE_URL}/internships/filter?${query}`,getAuthHeader());
           setInternships(Array.isArray(res.data) ? res.data : res.data.internships || []);
         } catch (err) {
           console.error("Error fetching internships:", err);
@@ -261,7 +272,7 @@
       if (!window.confirm("Are you sure you want to delete this internship?")) return;
 
       try {
-        await axios.delete(`${VITE_ADMIN_BASE_URL}internships/${id}`);
+        await axios.delete(`${VITE_ADMIN_BASE_URL}/internships/${id}`,getAuthHeader());
         setInternships(prev => prev.filter(i => i._id !== id));
       } catch (error) {
         console.error("Error deleting internship:", error);
@@ -280,19 +291,14 @@
         endMonth: "",
         endYear: "",
         company: "",
+        passoutYear: "", 
       };
       setFilters(cleared);
       // Call fetchInternships with cleared filters
       setTimeout(() => fetchInternships(), 0); // ensures filters are updated first
     };
 
-      useEffect(() => {
-      console.log("Internship NOC links:");
-      internships.forEach(i => {
-        console.log(i.rollNo, i.noc); // or just console.log(i.noc);
-      });
-    }, [internships]);
-
+     
       const renderStatusBadge = (status) => {
         let color = "secondary";
         if (status === "ongoing") color = "success";
@@ -369,12 +375,12 @@
                     <label className="form-label">Semester</label>
                     <select className="form-select" name="semester" value={filters.semester} onChange={handleChange}>
                       <option value="">All Semesters</option>
-                      <option value="II-I">2-1</option>
-                      <option value="II-II">2-2</option>
-                      <option value="III-I">3-1</option>
-                      <option value="III-II">3-2</option>
-                      <option value="IV-I">4-1</option>
-                      <option value="IV-II">4-2</option>
+                      <option value="II-I">II-I</option>
+                      <option value="II-II">II-II</option>
+                      <option value="III-I">III-I</option>
+                      <option value="III-II">III-II</option>
+                      <option value="IV-I">IV-I</option>
+                      <option value="IV-II">IV-II</option>
                     </select>
                   </div>
 
@@ -405,6 +411,19 @@
                       ))}
                     </select>
                   </div>
+
+                              {/* Passout Year */}
+            <div className="col-md-3">
+              <label className="form-label">Grad Year</label>
+              <input
+                type="number"
+                className="form-control"
+                name="passoutYear"
+                value={filters.passoutYear}
+                onChange={handleChange}
+                placeholder="YYYY or YY"
+              />
+            </div>
 
                   {/* Start Year */}
                   <div className="col-md-3">
@@ -469,6 +488,7 @@
                       <th>Semester</th>
                       <th>Branch</th>
                       <th>Section</th>
+                      <th>Passout Year</th>
                       <th>Stipend</th>
                       <th>Hr mail</th>
                       <th>Hr phone</th>
@@ -481,7 +501,7 @@
 
                       <tr key={i._id}>
                         <td>{i.rollNo}</td>
-                        <td>{normalizeCompanyName(i.organizationName.toLowerCase())}</td>
+                        <td>{normalizeCompanyName(i.organizationName?.toLowerCase() || "")}</td>
                         <td>{i.role}</td>
                         <td>{new Date(i.startingDate).toLocaleDateString()}</td>
                         <td>{new Date(i.endingDate).toLocaleDateString()}</td>
@@ -489,6 +509,7 @@
                         <td>{i.semester || "-"}</td>
                         <td>{i.branch || "-"}</td>
                         <td>{i.section || "-"}</td>
+                        <td>{i.passoutYear || "-"}</td>
                         <td>{i.package || "unpaid"}</td>
                         <td>{i.hrEmail || "-"}</td>
                         <td>{i.hrPhone || "-"}</td>

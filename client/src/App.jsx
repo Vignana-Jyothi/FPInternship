@@ -27,6 +27,8 @@ import ForgotPassword_admin from './pages/ForgotPassword_admin'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+
+
 const App = () => {
   return (
     <Router>
@@ -58,6 +60,7 @@ const App = () => {
           <Route path="feedbacks" element={<Feedbacks />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="organizations" element={<Organizations />} />
+          
         </Route>
 
         {/* Redirect all unknown routes */}

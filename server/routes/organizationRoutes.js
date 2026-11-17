@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
 const Organization = require('../models/Organization');
+const role = require('../middleware/role');
 
-// GET all organizations
+// 🔓 Public – Get all organizations
 router.get('/', async (req, res) => {
   try {
     const organizations = await Organization.find({});
@@ -12,29 +14,44 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new organization
-router.post('/', async (req, res) => {
+
+// 🔐 Admin Only – Add organization
+// 🔐 Admin Only – Add organization
+router.post('/', auth, role('admin'), async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name required' });
 
-    const existing = await Organization.findOne({ name: name.trim() });
-    if (existing) return res.status(409).json({ error: 'Organization exists' });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Organization name required' });
+    }
 
-    const newOrg = await Organization.create({ name: name.trim() });
-    res.status(201).json(newOrg);
+    const existing = await Organization.findOne({
+      name: new RegExp(`^${name.trim()}$`, 'i') // case-insensitive match
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Organization already exists' });
+    }
+
+    const org = new Organization({ name: name.trim() });
+    await org.save();
+
+    res.status(201).json(org);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("ADD ERROR:", err);
+    res.status(500).json({ error: 'Failed to add organization' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+
+// 🔐 Admin Only – Delete organization
+router.delete('/:id', auth, role('admin'), async (req, res) => {
   try {
     await Organization.findByIdAndDelete(req.params.id);
     res.json({ message: 'Organization deleted' });
   } catch (err) {
+    console.error("DELETE ERROR:", err);
     res.status(500).json({ error: 'Failed to delete organization' });
   }
 });
-
 module.exports = router;

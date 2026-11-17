@@ -121,3 +121,36 @@ input:focus, select:focus {
   text-align: center;
   margin-bottom: 10px;
 }
+
+
+.password-rules {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.valid {
+  color: green;
+}
+
+.invalid {
+  color: red;
+}
+
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding-right: 40px; /* space for eye */
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 40%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #555;
+}

@@ -8,10 +8,19 @@ const Feedbacks = () => {
   const ADMIN_BASE_URL = import.meta.env.VITE_ADMIN_BASE_URL;
   const [feedbacks, setFeedbacks] = useState([]);
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
   useEffect(() => {
     const fetchFeedbacks = async () => {
       try {
-        const res = await axios.get(`${ADMIN_BASE_URL}/feedbacks`);
+        const res = await axios.get(`${ADMIN_BASE_URL}/feedbacks`,getAuthHeader());
         // Ensure it's always an array
         setFeedbacks(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
@@ -26,23 +35,42 @@ const Feedbacks = () => {
   return (
     <div className="feedbacks-page">
       <Header/> 
+      
       <h2 className='mt-3 mb-3 text-center'>Student Feedbacks</h2>
       <table className="feedback-table">
-        <thead>
+      <thead>
           <tr>
             <th>Roll No</th>
+            <th>Organization</th>
+            <th>Start Date</th>
+            <th>End Date</th>
             <th>Skills Learned</th>
-            <th>Technical Skill</th>
+            <th>Technical</th>
             <th>Communication</th>
             <th>Teamwork</th>
             <th>Time Mgmt</th>
             <th>Overall Exp</th>
-          </tr>
-        </thead>
-        <tbody>
+                </tr>
+      </thead>
+      <tbody>
           {feedbacks.map((f, index) => (
             <tr key={index}>
               <td>{f.rollNo}</td>
+
+              <td>{f.internshipID?.organizationName || "N/A"}</td>
+
+              <td>
+                {f.internshipID?.startingDate
+                  ? new Date(f.internshipID.startingDate).toLocaleDateString()
+                  : "N/A"}
+              </td>
+
+              <td>
+                {f.internshipID?.endingDate
+                  ? new Date(f.internshipID.endingDate).toLocaleDateString()
+                  : "N/A"}
+              </td>
+
               <td>{f.skillsLearned}</td>
               <td>{f.technicalSkill}</td>
               <td>{f.communicationSkill}</td>

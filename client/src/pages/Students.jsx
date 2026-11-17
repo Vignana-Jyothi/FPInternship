@@ -12,6 +12,7 @@ const Students = () => {
     semester: "",
     branch: "",
     section: "",
+    passoutYear: "",
     academicYear: ""
   });
   const [academicYears, setAcademicYears] = useState([]);
@@ -28,6 +29,15 @@ const Students = () => {
     branch: "",
   });
 
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
  
   /* ========== PAGINATION (ADDED) ========== */
   const ITEMS_PER_PAGE = 10;
@@ -37,7 +47,9 @@ const Students = () => {
   const fetchStudents = async () => {
     try {
       const query = new URLSearchParams(filters).toString();
-      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/Users?${query}`);
+      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/Users?${query}`,
+      getAuthHeader());
+      
       setStudents(res.data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -47,7 +59,8 @@ const Students = () => {
 
     useEffect(() => {
       axios
-        .get(`${VITE_ADMIN_BASE_URL}/internships/academic-years`)
+        .get(`${VITE_ADMIN_BASE_URL}/internships/academic-years`, getAuthHeader())
+         
         .then(res => setAcademicYears(res.data))
         .catch(err => console.error(err));
     }, []);
@@ -75,7 +88,8 @@ const Students = () => {
 
   const openModal = async (rollNo) => {
     try {
-      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/roll/${rollNo}`);
+      const res = await axios.get(`${VITE_ADMIN_BASE_URL}/roll/${rollNo}`,getAuthHeader());
+      
       setSelectedStudent(res.data);
       setShowModal(true);
     } catch (err) {
@@ -97,13 +111,14 @@ const Students = () => {
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
-
   const handleEditSubmit = async () => {
     try {
       await axios.put(
         `${VITE_ADMIN_BASE_URL}/roll/${selectedStudent.rollNo}`,
-        editForm
+        editForm,
+        getAuthHeader()   // 🔥 ADD THIS
       );
+  
       setEditModal(false);
       fetchStudents();
     } catch (err) {
@@ -141,7 +156,7 @@ const Students = () => {
 
 
   {/* Student Name Search */}
-  <div className="col-md-3">
+  <div className="col-md-2">
     <label className="form-label">Student Name</label>
     <input
           type="text"
@@ -153,7 +168,7 @@ const Students = () => {
         />
     </div>
  {/* Academic year Search */}
- <div className="col-md-3">
+ <div className="col-md-2">
             <label className="form-label">Academic Year</label>
             <select
               className="form-select"
@@ -179,14 +194,14 @@ const Students = () => {
       className="form-select"
     >
       <option value="">All</option>
-      <option value="I-I">1-1</option>
-      <option value="I-II">1-2</option>
-      <option value="II-I">2-1</option>
-      <option value="II-II">2-2</option>
-      <option value="III-I">3-1</option>
-      <option value="III-II">3-2</option>
-      <option value="IV-I">4-1</option>
-      <option value="IV-II">4-2</option>
+      <option value="I-I">I-I</option>
+      <option value="I-II">I-II</option>
+      <option value="II-I">II-I</option>
+      <option value="II-II">II-II</option>
+      <option value="III-I">III-I</option>
+      <option value="III-II">III-II</option>
+      <option value="IV-I">IV-I</option>
+      <option value="IV-II">IV-II</option>
     </select>
   </div>
 
@@ -221,6 +236,19 @@ const Students = () => {
     </select>
   </div>
 
+  {/* Passout Year */}
+{/* Grad Year */}
+    <div className="col-md-2">
+      <label className="form-label">Passout Year</label>
+      <input
+        type="number"
+        name="passoutYear"
+        value={filters.passoutYear}
+        onChange={handleChange}
+        className="form-control"
+        placeholder="YYYY or YY"
+      />
+    </div>
 </div>
 
       {/* TABLE */}
@@ -233,6 +261,7 @@ const Students = () => {
             <th>Branch</th>
             <th>Semester</th>
             <th>Section</th>
+            <th>Passout Year</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -243,8 +272,9 @@ const Students = () => {
               <td>{student.name}</td>
               <td>{student.email}</td>
               <td>{student.branch}</td>
-              <td>{student.section}</td>
               <td>{student.semester}</td>
+              <td>{student.section}</td>
+              <td>{student.passoutYear}</td> 
               <td>
                 <button
                   className="btn btn-sm btn-primary me-2"
@@ -253,7 +283,7 @@ const Students = () => {
                   View
                 </button>
                 <button
-                  className="btn btn-sm btn-warning"
+                  className="btn btn-sm mt-2 btn-warning"
                   onClick={() => openEditModal(student)}
                 >
                   Edit

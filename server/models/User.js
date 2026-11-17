@@ -8,6 +8,9 @@ const UserSchema = new mongoose.Schema({
   branch: { type: String, required: true },
   semester: { type: String, required: true },
   section: { type: String, enum: ['A', 'B', 'C', 'D'], required: true },
+
+  passoutYear: { type: Number, required: true },   // ✅ ADD THIS
+
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'student'], default: 'student' },
 

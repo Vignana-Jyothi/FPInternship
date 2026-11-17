@@ -15,13 +15,22 @@ const Organizations = () => {
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        "x-auth-token": token
+      }
+    };
+  };
+
   useEffect(() => {
     fetchOrganizations();
   }, []);
 
   const fetchOrganizations = async () => {
     try {
-      const res = await axios.get(`${VITE_ORG_BASE_URL}`);
+      const res = await axios.get(`${VITE_ORG_BASE_URL}`,getAuthHeader());
       setOrganizations(res.data || []);
     } catch (err) {
       console.error("Error fetching organizations:", err);
@@ -31,9 +40,12 @@ const Organizations = () => {
   const handleAddOrganization = async () => {
     if (!newOrgName.trim()) return;
     try {
-      const res = await axios.post(`${VITE_ORG_BASE_URL}`, {
-        name: newOrgName.trim(),
-      });
+      const res = await axios.post(
+        `${VITE_ORG_BASE_URL}`,
+        { name: newOrgName.trim() },
+        getAuthHeader()
+      );
+      
       setOrganizations([...organizations, res.data]);
       setNewOrgName("");
       setError("");
@@ -46,7 +58,7 @@ const Organizations = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${VITE_ORG_BASE_URL}/${id}`);
+      await axios.delete(`${VITE_ORG_BASE_URL}/${id}`,getAuthHeader());
       setOrganizations(organizations.filter((org) => org._id !== id));
     } catch (err) {
       console.error("Error deleting organization:", err);

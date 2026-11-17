@@ -164,3 +164,8 @@ label {
 .internship-form input[type="email"] {
   border-radius: 8px !important;
 }
+
+.readonly-field {
+  background-color: #f1f1f1;
+  cursor: not-allowed;
+}

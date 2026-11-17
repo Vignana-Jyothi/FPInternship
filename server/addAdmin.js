@@ -13,11 +13,11 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(async () => {
-  console.log('MongoDB connected');
+  
 
   const existingAdmin = await Admin.findOne({ adminID });
   if (existingAdmin) {
-    console.log('Admin with this ID already exists.');
+   
     process.exit(0);
   }
 
@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGO_URI, {
   });
 
   await newAdmin.save();
-  console.log('Admin user created successfully.');
+  
   process.exit(0);
 }).catch((err) => {
   console.error('MongoDB connection error:', err);

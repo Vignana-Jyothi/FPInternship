@@ -33,7 +33,7 @@ const Login = () => {
       const cleanedEmail = credentials.email.toLowerCase().trim();
       const res = await loginUser({ email: cleanedEmail, password: credentials.password });
 
-      console.log('Login response:', res);
+    
 
       const { token, role, email } = res;
       alert('Login successful');
@@ -50,6 +50,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div>

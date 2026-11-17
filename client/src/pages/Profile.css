@@ -6,14 +6,14 @@
   padding: 30px 25px;
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.07);
   max-height: calc(100vh - 150px); /* Adjust according to header height */
-  overflow-y: fixed;
+  overflow-y: auto;
 }
 
 .profile-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 1rem 2rem;   
   background: linear-gradient(135deg, #004e92 0%, #000428 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -100,8 +100,8 @@
 }
 
 .profile-logo-img {
-  width: 65px;
-  height: 65px;
+  width: 95px;
+  height: 95px;
   margin-right: 20px;
   border-radius: 8px;
 }
@@ -116,10 +116,4 @@
 .profile-text-muted-center {
   text-align: center;
   color: #6c757d;
-}
-
-/* Profile.css */
-body {
-  overflow: hidden;
-  overflow-y: fixed;
 }

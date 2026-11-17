@@ -11,6 +11,34 @@ const ForgotPassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passwordRules, setPasswordRules] = useState({
+    minLength: false,
+    upperCase: false,
+    number: false,
+    specialChar: false,
+  });
+
+  const validatePassword = (password) => {
+    const minLength = /.{8,}/;
+    const upperCase = /[A-Z]/;
+    const number = /[0-9]/;
+    const specialChar = /[@$!%*?&]/;
+  
+    if (!minLength.test(password)) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!upperCase.test(password)) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!number.test(password)) {
+      return "Password must contain at least one number.";
+    }
+    if (!specialChar.test(password)) {
+      return "Password must contain at least one special character (@$!%*?&).";
+    }
+  
+    return null; // valid
+  };
 
   const handleSendCode = async (e) => {
     e.preventDefault();
@@ -29,8 +57,16 @@ const ForgotPassword = () => {
 
   const handleVerifyAndReset = async (e) => {
     e.preventDefault();
+  
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setMessage(passwordError);
+      return;
+    }
+  
     setLoading(true);
     setMessage("");
+  
     try {
       const res = await verifyResetCode({ email, otp, newPassword });
       setMessage(res.message || "Password updated successfully.");
@@ -43,6 +79,17 @@ const ForgotPassword = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePasswordChange = (value) => {
+    setNewPassword(value);
+  
+    setPasswordRules({
+      minLength: /.{8,}/.test(value),
+      upperCase: /[A-Z]/.test(value),
+      number: /[0-9]/.test(value),
+      specialChar: /[@$!%*?&]/.test(value),
+    });
   };
 
   return (
@@ -74,13 +121,14 @@ const ForgotPassword = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              <button
-                type="submit"
-                className="btn gradient-btn w-100"
-                disabled={loading || !email}
-              >
-                {loading ? "Sending..." : "Send Code"}
-              </button>
+            <button
+              type="submit"
+              className="btn gradient-btn w-100"
+              style={{ color: "white" }}
+              disabled={loading || !email}
+            >
+              {loading ? "Sending..." : "Send Code"}
+            </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyAndReset}>
@@ -95,20 +143,40 @@ const ForgotPassword = () => {
 
               <label className="form-label">New Password</label>
               <input
-                type="password"
-                className="form-control mb-3"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-
-              <button
-                type="submit"
-                className="btn gradient-btn w-100"
-                disabled={loading || !otp || !newPassword}
-              >
-                {loading ? "Updating..." : "Reset Password"}
-              </button>
+              type="password"
+              className="form-control mb-3"
+              placeholder="Enter new password"
+              value={newPassword}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+            />
+           <div className="small mb-2">
+          <div className={passwordRules.minLength ? "text-success" : "text-danger"}>
+            • At least 8 characters
+          </div>
+          <div className={passwordRules.upperCase ? "text-success" : "text-danger"}>
+            • At least one uppercase letter
+          </div>
+          <div className={passwordRules.number ? "text-success" : "text-danger"}>
+            • At least one number
+          </div>
+          <div className={passwordRules.specialChar ? "text-success" : "text-danger"}>
+            • At least one special character (@$!%*?&)
+          </div>
+        </div>
+          <button
+          type="submit"
+          className="btn gradient-btn w-100"
+          disabled={
+            loading ||
+            !otp ||
+            !passwordRules.minLength ||
+            !passwordRules.upperCase ||
+            !passwordRules.number ||
+            !passwordRules.specialChar
+          }
+        >
+          {loading ? "Updating..." : "Reset Password"}
+        </button>
             </form>
           )}
 
